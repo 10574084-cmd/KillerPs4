@@ -5,9 +5,6 @@
 #include <cstring>
 #include <sstream>
 
-#include <orbis/Pad.h>
-#include <orbis/UserService.h>
-
 #include "graphics.h"
 
 std::stringstream debugLogStream;
@@ -247,111 +244,34 @@ void renderBuffer(Scene2D *s, int buffer, bool backdrop, bool grid,
     drawTestScene(s, backdrop, grid, safeFrame, glow);
 }
 
-bool initController(int &handle)
-{
-    if (scePadInit() != 0) return false;
-
-    OrbisUserServiceInitializeParams params = {};
-    params.priority = ORBIS_KERNEL_PRIO_FIFO_LOWEST;
-    if (sceUserServiceInitialize(&params) != 0) return false;
-
-    int32_t userId = -1;
-    if (sceUserServiceGetInitialUser(&userId) != 0 || userId < 0) return false;
-
-    handle = scePadOpen(userId, ORBIS_PAD_PORT_TYPE_STANDARD, 0, nullptr);
-    return handle >= 0;
-}
 } // namespace
 
 int main()
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
-    printf("KI1 Widescreen Test - aspect-preserving 16:9 preview.\n");
+    printf("KI1 Widescreen Test - OpenOrbis framebuffer diagnostic.\\n");
 
-    // Keep the graphics context alive for the complete application lifetime.
-    // The upstream sample declares a destructor but does not define one.
+    // Match the official OpenOrbis graphics sample memory allocation.
     Scene2D *scene = new Scene2D(kWidth, kHeight, 4);
     if (!scene->Init(0x0C000000, 2)) {
-        printf("Video output initialization failed.\n");
+        printf("Video output initialization failed.\\n");
         for (;;) sceKernelUsleep(250000);
     }
 
-    // Do not initialize controller services until after the first image
-    // has been submitted. This keeps input-service initialization from
-    // delaying the first visible frame on consoles with a slow user service.
-    int padHandle = -1;
-    bool controllerReady = false;
+    // Render both registered buffers once. Then use the same submit/wait/
+    // swap sequence as the official OpenOrbis graphics sample.
+    scene->SetActiveFrameBuffer(0);
+    drawTestScene(scene, true, false, false, 5);
 
-    bool backdrop = true;
-    bool grid = false;
-    bool safeFrame = false;
-    int glow = 5;
-    uint32_t previousButtons = 0;
+    scene->SetActiveFrameBuffer(1);
+    drawTestScene(scene, true, false, false, 5);
+
     int frameId = 0;
-    int activeBuffer = 0;
-
-    // Draw the first buffer, present it, then prepare the second buffer.
-    renderBuffer(scene, activeBuffer, backdrop, grid, safeFrame, glow);
-    scene->SubmitFlip(frameId);
-    scene->FrameWait(frameId);
-    ++frameId;
-    activeBuffer = 1;
-    renderBuffer(scene, activeBuffer, backdrop, grid, safeFrame, glow);
-
-    // Present a known-good graphics frame before touching pad/user services.
-    controllerReady = initController(padHandle);
-    if (controllerReady) printf("DualShock 4 input ready.\n");
-    else printf("Controller unavailable; default widescreen preview will continue.\n");
-
+    scene->SetActiveFrameBuffer(0);
     for (;;) {
-        uint32_t pressed = 0;
-        if (controllerReady && padHandle >= 0) {
-            OrbisPadData pad = {};
-            if (scePadReadState(padHandle, &pad) == 0) {
-                pressed = pad.buttons & ~previousButtons;
-                previousButtons = pad.buttons;
-            } else {
-                previousButtons = 0;
-            }
-        }
-
-        bool changed = false;
-        if (pressed & ORBIS_PAD_BUTTON_CROSS) { backdrop = !backdrop; changed = true; }
-        if (pressed & ORBIS_PAD_BUTTON_TRIANGLE) { grid = !grid; changed = true; }
-        if (pressed & ORBIS_PAD_BUTTON_SQUARE) { safeFrame = !safeFrame; changed = true; }
-        if (pressed & ORBIS_PAD_BUTTON_LEFT) {
-            const int next = std::max(0, glow - 1);
-            changed = changed || next != glow;
-            glow = next;
-        }
-        if (pressed & ORBIS_PAD_BUTTON_RIGHT) {
-            const int next = std::min(10, glow + 1);
-            changed = changed || next != glow;
-            glow = next;
-        }
-        if (pressed & ORBIS_PAD_BUTTON_CIRCLE) {
-            backdrop = true;
-            grid = false;
-            safeFrame = false;
-            glow = 5;
-            changed = true;
-        }
-
-        // Paint only the buffer that is not currently being scanned out.
-        if (changed) {
-            renderBuffer(scene, activeBuffer, backdrop, grid, safeFrame, glow);
-        }
-
-        scene->SetActiveFrameBuffer(activeBuffer);
         scene->SubmitFlip(frameId);
         scene->FrameWait(frameId);
-        activeBuffer = 1 - activeBuffer;
-
-        // After the flip, the old front buffer is now safe to prepare for
-        // the next frame. This keeps both buffers visually in sync.
-        if (changed) {
-            renderBuffer(scene, activeBuffer, backdrop, grid, safeFrame, glow);
-        }
+        scene->FrameBufferSwap();
         ++frameId;
     }
 
