@@ -66,6 +66,8 @@ public:
 	
 	void DrawPixel(int x, int y, Color color);
 	void DrawRectangle(int x, int y, int w, int h, Color color);
+	void DrawRGBImage(int x, int y, int w, int h,
+	                  const uint32_t *source, int sourceWidth, int sourceHeight);
 	
 #ifdef GRAPHICS_USES_FONT
 	bool InitFont(FT_Face *face, const char *fontPath, int fontSize);
