@@ -336,7 +336,7 @@ int main()
             renderBuffer(scene, activeBuffer, backdrop, grid, safeFrame, glow);
         }
 
-        scene.SetActiveFrameBuffer(activeBuffer);
+        scene->SetActiveFrameBuffer(activeBuffer);
         scene->SubmitFlip(frameId);
         scene->FrameWait(frameId);
         activeBuffer = 1 - activeBuffer;
