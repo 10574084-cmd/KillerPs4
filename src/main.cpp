@@ -5,6 +5,9 @@
 #include <cstring>
 #include <sstream>
 
+#include <orbis/Pad.h>
+#include <orbis/UserService.h>
+
 #include "graphics.h"
 
 std::stringstream debugLogStream;
@@ -244,35 +247,112 @@ void renderBuffer(Scene2D *s, int buffer, bool backdrop, bool grid,
     drawTestScene(s, backdrop, grid, safeFrame, glow);
 }
 
+bool initController(int &handle)
+{
+    if (scePadInit() != 0) return false;
+
+    OrbisUserServiceInitializeParams params = {};
+    params.priority = ORBIS_KERNEL_PRIO_FIFO_LOWEST;
+    if (sceUserServiceInitialize(&params) != 0) return false;
+
+    int32_t userId = -1;
+    if (sceUserServiceGetInitialUser(&userId) != 0 || userId < 0) return false;
+
+    handle = scePadOpen(userId, ORBIS_PAD_PORT_TYPE_STANDARD, 0, nullptr);
+    return handle >= 0;
+}
 } // namespace
 
 int main()
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
-    printf("KI1 Widescreen Test - OpenOrbis framebuffer diagnostic.\\n");
+    printf("KI1 Widescreen Test - framebuffer and controller test.\\n");
 
-    // Match the official OpenOrbis graphics sample memory allocation.
     Scene2D *scene = new Scene2D(kWidth, kHeight, 4);
     if (!scene->Init(0x0C000000, 2)) {
         printf("Video output initialization failed.\\n");
         for (;;) sceKernelUsleep(250000);
     }
 
-    // Render both registered buffers once. Then use the same submit/wait/
-    // swap sequence as the official OpenOrbis graphics sample.
-    scene->SetActiveFrameBuffer(0);
-    drawTestScene(scene, true, false, false, 5);
+    bool backdrop = true;
+    bool grid = false;
+    bool safeFrame = false;
+    int glow = 5;
 
-    scene->SetActiveFrameBuffer(1);
-    drawTestScene(scene, true, false, false, 5);
+    // Prepare both buffers before the first flip, so the first frame is valid.
+    renderBuffer(scene, 0, backdrop, grid, safeFrame, glow);
+    renderBuffer(scene, 1, backdrop, grid, safeFrame, glow);
 
     int frameId = 0;
     scene->SetActiveFrameBuffer(0);
+    scene->SubmitFlip(frameId);
+    scene->FrameWait(frameId);
+    scene->FrameBufferSwap();
+    ++frameId;
+
+    // Bring up controller services only after the first frame is on screen.
+    int padHandle = -1;
+    const bool controllerReady = initController(padHandle);
+    if (controllerReady) printf("DualShock controller ready.\\n");
+    else printf("Controller unavailable; display remains active.\\n");
+
+    uint32_t previousButtons = 0;
     for (;;) {
+        uint32_t pressed = 0;
+        if (controllerReady && padHandle >= 0) {
+            OrbisPadData pad = {};
+            if (scePadReadState(padHandle, &pad) == 0) {
+                pressed = pad.buttons & ~previousButtons;
+                previousButtons = pad.buttons;
+            } else {
+                previousButtons = 0;
+            }
+        }
+
+        bool changed = false;
+        if (pressed & ORBIS_PAD_BUTTON_CROSS) {
+            backdrop = !backdrop;
+            changed = true;
+        }
+        if (pressed & ORBIS_PAD_BUTTON_TRIANGLE) {
+            grid = !grid;
+            changed = true;
+        }
+        if (pressed & ORBIS_PAD_BUTTON_SQUARE) {
+            safeFrame = !safeFrame;
+            changed = true;
+        }
+        if (pressed & ORBIS_PAD_BUTTON_LEFT) {
+            const int next = std::max(0, glow - 1);
+            changed = changed || next != glow;
+            glow = next;
+        }
+        if (pressed & ORBIS_PAD_BUTTON_RIGHT) {
+            const int next = std::min(10, glow + 1);
+            changed = changed || next != glow;
+            glow = next;
+        }
+        if (pressed & ORBIS_PAD_BUTTON_CIRCLE) {
+            backdrop = true;
+            grid = false;
+            safeFrame = false;
+            glow = 5;
+            changed = true;
+        }
+
+        // Draw into the back buffer, then present it using the official
+        // OpenOrbis submit/wait/swap sequence.
+        if (changed)
+            drawTestScene(scene, backdrop, grid, safeFrame, glow);
+
         scene->SubmitFlip(frameId);
         scene->FrameWait(frameId);
         scene->FrameBufferSwap();
         ++frameId;
+
+        // Keep the other buffer synchronized after a settings change.
+        if (changed)
+            drawTestScene(scene, backdrop, grid, safeFrame, glow);
     }
 
     return 0;
