@@ -33,15 +33,18 @@ The KI1 set normally needs:
 
 The first manifest module selects a valid L1.5D or L1.4 boot ROM, checks the eight sound ROM sizes and CRC32 values, and checks the raw disk size or the CHD file signature. Full CHD integrity verification and wiring the report into a PS4 loader are still pending. Exact storage path and transfer workflow will be finalized with the first loader build.
 
-## Video and controls target
+## Video and shader target
 
-The arcade image is 320×240 at approximately 58.96 Hz. The presentation layer is intended to provide:
-- Original 4:3 presentation and an optional 16:9 layout that preserves the game's aspect ratio rather than stretching the playfield.
-- Nearest-neighbour and bilinear filtering.
-- Sharp, smooth, scanline and CRT-style shader options where supported by the PS4 graphics backend.
-- DualShock 4 navigation and two-player arcade controls.
+The arcade image is 320×240 at approximately 58.96 Hz. Original GLSL 3.30 shader sources and preset manifests are now in `shaders/`:
 
-Filters and screen layout must not change the emulated game's timing.
+- **Lush Arcade**: Newb-style visual direction with warm highlights, cool shadows, richer color, soft bloom and a restrained vignette.
+- **Arcade CRT**: optional scanlines, subtle RGB aperture mask and vignette.
+
+The Lush Arcade preset uses a bright-pass extraction, two separable blur passes and a final color-grade/composite pass. It keeps the source at 320×240 and plans to use a half-resolution bloom buffer.
+
+**These shader files are not connected to a PS4 frame renderer yet.** The repository does not have the emulator video loop or an OpenGL context at this stage. GitHub Actions now validates the GLSL syntax and preset JSON, but that is not a PS4 runtime test.
+
+The intended presentation still preserves the original 4:3 playfield. A 16:9 display should add side areas instead of stretching the game image. Nearest-neighbour and bilinear scaling remain independent of the Lush Arcade / CRT presets. Filters must not change emulation timing.
 
 ## Build
 
