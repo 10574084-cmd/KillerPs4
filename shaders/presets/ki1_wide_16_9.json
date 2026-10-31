@@ -1,0 +1,32 @@
+{
+  "name": "Wide Arcade 16:9",
+  "description": "Keeps the complete KI1 4:3 game frame centered and fills the side gutters with a dark, blurred scene extension.",
+  "pass": "passes/wide_preserve_4_3.frag",
+  "source": {
+    "width": 320,
+    "height": 240,
+    "aspect_ratio": "4:3"
+  },
+  "output": {
+    "target_aspect_ratio": "16:9",
+    "viewport_policy": "fit_4_3_center"
+  },
+  "uniforms": {
+    "u_blur_pixels": 7.0,
+    "u_side_brightness": 0.46,
+    "u_side_saturation": 0.78,
+    "u_side_vignette": 0.22
+  },
+  "pipeline_order": [
+    "render_game_to_320x240",
+    "optional_lush_arcade_color_grade",
+    "wide_preserve_4_3"
+  ],
+  "notes": [
+    "The original gameplay frame is never stretched, cropped or zoomed.",
+    "For a 1920x1080 output, the centered gameplay viewport is 1440x1080 and the remaining 240 pixels on each side are backdrop gutters.",
+    "The gutters use a blurred, darker copy of the scene; this is a presentation hack, not additional game camera visibility.",
+    "Keep the game HUD and OSD inside the same centered 4:3 viewport.",
+    "On 4:3 output the game fills the output and no gutters are generated."
+  ]
+}
