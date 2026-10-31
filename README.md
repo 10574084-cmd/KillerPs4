@@ -52,7 +52,7 @@ Nearest-neighbour and bilinear scaling remain independent of the Lush Arcade / C
 
 The host-only manifest tests can be run with `sh tools/test_ki1_data.sh`. Shader syntax and preset JSON are checked with `sh tools/test_shaders.sh`.
 
-The workflow `.github/workflows/ps4-widescreen-test.yml` builds an experimental Killer Instinct PS4 PKG (version 01.01) using OpenOrbis and uploads the `Killer-Instinct-PS4` artifact. A successful Actions run confirms compilation and packaging only; it does not prove the emulator boots or runs at full speed on hardware.
+The workflow `.github/workflows/ps4-widescreen-test.yml` builds an experimental Killer Instinct PS4 PKG (version 01.02) using OpenOrbis and uploads the `Killer-Instinct-PS4` artifact. A successful Actions run confirms compilation and packaging only; it does not prove the emulator boots or runs at full speed on hardware.
 
 The real KI1 ELF/PKG is not ready: the machine core has an initial PS4 adapter and a separate cross-compile target, but is not yet linked to the running app or connected to the renderer/audio output. See [docs/PS4_PORTING_PLAN.md](docs/PS4_PORTING_PLAN.md) for the actual porting milestones.
 
