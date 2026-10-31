@@ -12,7 +12,7 @@ Native PlayStation 4 homebrew port project for **Killer Instinct (arcade, 1994)*
 
 **Early porting stage — not playable yet.**
 
-A portable KI1 data-manifest scanner and host tests are present in `src/ki1_data.c`. The emulator core and PS4 game frontend have not yet been integrated. There is now a separate OpenOrbis 16:9 display-test app in `src/main.cpp`, with a PKG build workflow. That test app draws a synthetic 320×240 pattern; it is not Killer Instinct gameplay. See [WIDESCREEN_TEST_BUILD.md](docs/WIDESCREEN_TEST_BUILD.md).
+A portable KI1 data-manifest scanner and host tests are present in `src/ki1_data.c`. The working PS4 application is still a separate OpenOrbis 16:9 display test in `src/main.cpp`; it draws a synthetic 320×240 pattern, not Killer Instinct gameplay. A PS4-facing machine adapter and pinned UltraCombo source-build check have now been added; see [ULTRACOMBO_CORE.md](docs/ULTRACOMBO_CORE.md). The core archive is not yet linked into the running application.
 
 ## Emulation approach
 
@@ -54,7 +54,7 @@ The host-only manifest tests can be run with `sh tools/test_ki1_data.sh`. Shader
 
 The workflow `.github/workflows/ps4-widescreen-test.yml` builds a separate PS4 **widescreen test PKG** using OpenOrbis and uploads the `KI1-Widescreen-Test-PS4` artifact. It is a synthetic display test, not a game build. Only install it after its Actions run finishes successfully. See [docs/WIDESCREEN_TEST_BUILD.md](docs/WIDESCREEN_TEST_BUILD.md).
 
-The real KI1 ELF/PKG is not ready: the emulator core and shader renderer are not yet connected. See [docs/PS4_PORTING_PLAN.md](docs/PS4_PORTING_PLAN.md) for the actual porting milestones.
+The real KI1 ELF/PKG is not ready: the machine core has an initial PS4 adapter and a separate cross-compile target, but is not yet linked to the running app or connected to the renderer/audio output. See [docs/PS4_PORTING_PLAN.md](docs/PS4_PORTING_PLAN.md) for the actual porting milestones.
 
 ## Credits and licensing
 
