@@ -215,6 +215,15 @@ bool ensureDirectory(const std::string &path)
     return errno == EEXIST && isDirectory(path);
 }
 
+void bootLog(FILE *logFile, const char *stage)
+{
+    printf("[BOOT] %s\\n", stage);
+    if (logFile) {
+        fprintf(logFile, "%s\\n", stage);
+        fflush(logFile);
+    }
+}
+
 std::string joinPath(const std::string &base, const std::string &name)
 {
     if (base == "/") return base + name;
@@ -346,23 +355,30 @@ bool initController(int &handle)
 int main()
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
-    printf("Killer Instinct PS4 - select game folder.\n");
+    printf("Killer Instinct PS4 - select game folder.\\n");
 
-    // Create the writable game-data directory immediately. This happens
-    // before video/controller initialization, so folder creation does not
-    // depend on the picker becoming visible or the user pressing Options.
-    const bool internalDataReady =
-        ensureDirectory("/data/KillerRemakeP4") &&
-        ensureDirectory("/data/KillerRemakeP4/roms") &&
+    // Create the writable data folder first, then record each boot milestone.
+    const bool dataRootReady = ensureDirectory("/data/KillerRemakeP4");
+    FILE *bootLogFile = dataRootReady
+        ? fopen("/data/KillerRemakeP4/boot.log", "w") : nullptr;
+    bootLog(bootLogFile, "APP MAIN ENTERED");
+
+    const bool romsReady = dataRootReady &&
+        ensureDirectory("/data/KillerRemakeP4/roms");
+    const bool internalDataReady = romsReady &&
         ensureDirectory("/data/KillerRemakeP4/roms/kinst");
-    printf("Internal game-data folder: %s\n",
-           internalDataReady ? "ready" : "creation failed");
+    bootLog(bootLogFile, internalDataReady
+        ? "INTERNAL GAME FOLDER READY"
+        : "INTERNAL GAME FOLDER CREATION FAILED");
 
+    bootLog(bootLogFile, "BEFORE VIDEO INITIALIZATION");
     Scene2D *scene = new Scene2D(kWidth, kHeight, 4);
     if (!scene->Init(0x0C000000, 2)) {
-        printf("Video output initialization failed.\n");
+        bootLog(bootLogFile, "VIDEO INITIALIZATION FAILED");
+        printf("Video output initialization failed.\\n");
         for (;;) sceKernelUsleep(250000);
     }
+    bootLog(bootLogFile, "VIDEO INITIALIZATION OK");
 
     FolderPicker picker;
     // The internal app-data folder has already been prepared during startup.
@@ -371,16 +387,19 @@ int main()
         ? "INTERNAL DATA FOLDER READY"
         : "FAILED TO CREATE INTERNAL DATA FOLDER";
 
-    // Use the same proven double-buffer initialization and flip sequence
-    // as the previously working PS4 display build.
+    // Record rendering milestones to identify where a black screen begins.
+    bootLog(bootLogFile, "BEFORE DRAWING STARTUP FRAMES");
     for (int buffer = 0; buffer < 2; ++buffer) {
         scene->SetActiveFrameBuffer(buffer);
         drawFolderPicker(scene, picker);
     }
+    bootLog(bootLogFile, "STARTUP FRAMEBUFFERS DRAWN");
     int frameId = 0;
     scene->SetActiveFrameBuffer(0);
+    bootLog(bootLogFile, "BEFORE FIRST VIDEO FLIP");
     scene->SubmitFlip(frameId);
     scene->FrameWait(frameId);
+    bootLog(bootLogFile, "FIRST VIDEO FLIP COMPLETED");
     scene->FrameBufferSwap();
     ++frameId;
 
@@ -399,6 +418,7 @@ int main()
     double frameAccumulator = 0.0;
     char coreError[512] = {};
 
+    bootLog(bootLogFile, "MAIN INPUT LOOP REACHED");
     for (;;) {
         uint32_t pressed = 0;
         uint32_t currentButtons = 0;
@@ -424,6 +444,7 @@ int main()
                 pickerChanged = true;
             }
             if (pressed & ORBIS_PAD_BUTTON_OPTIONS) {
+                bootLog(bootLogFile, "OPTIONS BUTTON PRESSED");
                 // Method 2: create and open the app's writable internal folder.
                 storageScanned = prepareInternalStorage(picker);
                 pickerChanged = true;

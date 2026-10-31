@@ -12,7 +12,7 @@ Native PlayStation 4 homebrew port project for **Killer Instinct (arcade, 1994)*
 
 **Early porting stage — not playable yet.**
 
-A portable KI1 data-manifest scanner and host tests are present in `src/ki1_data.c`. The PS4 application opens an in-app folder browser. The application creates `/data/KillerRemakeP4/roms/kinst` automatically during startup, before video initialization. Press Options to open it, or Square to browse USB storage. Place your own extracted `kinst` files in one folder and select that folder. The app checks the boot ROM, all eight sound ROMs, and the CHD/raw disk before starting the emulator core. The port remains experimental and has not yet been validated as playable on a console.
+A portable KI1 data-manifest scanner and host tests are present in `src/ki1_data.c`. The PS4 application opens an in-app folder browser. The application creates `/data/KillerRemakeP4/roms/kinst` automatically during startup, before video initialization. Press Options to open it, or Square to browse USB storage. Place your own extracted `kinst` files in one folder and select that folder. Startup progress is logged to `/data/KillerRemakeP4/boot.log`. The app checks the boot ROM, all eight sound ROMs, and the CHD/raw disk before starting the emulator core. The port remains experimental and has not yet been validated as playable on a console.
 
 ## Emulation approach
 
@@ -52,7 +52,7 @@ Nearest-neighbour and bilinear scaling remain independent of the Lush Arcade / C
 
 The host-only manifest tests can be run with `sh tools/test_ki1_data.sh`. Shader syntax and preset JSON are checked with `sh tools/test_shaders.sh`.
 
-The workflow `.github/workflows/ps4-widescreen-test.yml` builds an experimental Killer Instinct PS4 PKG (version 01.04) using OpenOrbis and uploads the `Killer-Instinct-PS4` artifact. A successful Actions run confirms compilation and packaging only; it does not prove the emulator boots or runs at full speed on hardware.
+The workflow `.github/workflows/ps4-widescreen-test.yml` builds an experimental Killer Instinct PS4 PKG (version 01.05) using OpenOrbis and uploads the `Killer-Instinct-PS4` artifact. A successful Actions run confirms compilation and packaging only; it does not prove the emulator boots or runs at full speed on hardware.
 
 The real KI1 ELF/PKG is not ready: the machine core has an initial PS4 adapter and a separate cross-compile target, but is not yet linked to the running app or connected to the renderer/audio output. See [docs/PS4_PORTING_PLAN.md](docs/PS4_PORTING_PLAN.md) for the actual porting milestones.
 
