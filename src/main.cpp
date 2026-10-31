@@ -279,14 +279,26 @@ int main()
         drawBackdrop(&scene, backdrop, glow);
         drawGameTestPattern(&scene, grid, safeFrame);
 
-        panel(&scene, 34, 30, 395, 64, rgb(8, 12, 25), rgb(65, 172, 213));
-        text(&scene, "KI1 16:9 TEST", 54, 48, 4, rgb(240, 247, 255));
+        // Keep all test labels inside the 240-pixel side gutters so the
+        // central 4:3 content area remains completely unobstructed.
+        panel(&scene, 16, 24, 208, 104, rgb(8, 12, 25), rgb(65, 172, 213));
+        text(&scene, "KI1 16:9", 28, 42, 3, rgb(240, 247, 255));
+        text(&scene, "TEST", 28, 76, 3, rgb(240, 247, 255));
 
-        panel(&scene, 34, 972, 1852, 78, rgb(8, 12, 25), rgb(65, 172, 213));
-        text(&scene, "CROSS SIDES  TRIANGLE GRID  SQUARE SAFE FRAME", 58, 988, 3,
-             rgb(232, 237, 248));
-        text(&scene, "LEFT RIGHT SIDEBAR LIGHT  CIRCLE RESET", 58, 1021, 3,
-             rgb(167, 194, 226));
+        panel(&scene, 16, 176, 208, 392, rgb(8, 12, 25), rgb(65, 172, 213));
+        text(&scene, "CROSS", 28, 197, 3, rgb(232, 237, 248));
+        text(&scene, "SIDES", 28, 228, 3, rgb(167, 194, 226));
+        text(&scene, "TRIANGLE", 28, 285, 2, rgb(232, 237, 248));
+        text(&scene, "GRID", 28, 316, 3, rgb(167, 194, 226));
+        text(&scene, "SQUARE", 28, 373, 3, rgb(232, 237, 248));
+        text(&scene, "SAFE", 28, 404, 3, rgb(167, 194, 226));
+        text(&scene, "LEFT RIGHT", 28, 461, 2, rgb(232, 237, 248));
+        text(&scene, "LIGHT", 28, 492, 3, rgb(167, 194, 226));
+        text(&scene, "CIRCLE", 28, 525, 3, rgb(232, 237, 248));
+
+        panel(&scene, 1696, 24, 208, 104, rgb(8, 12, 25), rgb(65, 172, 213));
+        text(&scene, "4:3 AREA", 1708, 42, 3, rgb(240, 247, 255));
+        text(&scene, "1440X1080", 1708, 78, 2, rgb(167, 194, 226));
 
         scene.SubmitFlip(frameId);
         scene.FrameWait(frameId);
