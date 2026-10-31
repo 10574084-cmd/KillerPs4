@@ -25,3 +25,6 @@ u36-l1
 /*.oelf
 /eboot.bin
 /pkg.gp4
+
+# CI-built OpenOrbis helper
+/tools/bin/
