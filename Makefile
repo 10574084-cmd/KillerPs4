@@ -11,7 +11,7 @@ ELF := $(BUILD_DIR)/ki1_widescreen_test.elf
 OELF := $(BUILD_DIR)/ki1_widescreen_test.oelf
 PKG := $(CONTENT_ID).pkg
 
-TARGET_FLAGS := --target=x86_64-pc-freebsd12-elf -fPIC -funwind-tables -c \
+TARGET_FLAGS := --target=x86_64-pc-freebsd12-elf -D_GNU_SOURCE -fPIC -funwind-tables -c \
     -isysroot $(TOOLCHAIN) -isystem $(TOOLCHAIN)/include
 CXXFLAGS := $(TARGET_FLAGS) -isystem $(TOOLCHAIN)/include/c++/v1 \
     -I$(COMMONDIR) -Isrc -std=c++17 -O2 -Wall -Wextra
