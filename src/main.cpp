@@ -324,12 +324,9 @@ int main()
     }
 
     FolderPicker picker;
-    // Select a direct USB mount before touching its directory entries.
-    // This also makes the initial screen appear before any storage scan.
-    if (isDirectory("/mnt/usb0")) picker.path = "/mnt/usb0";
-    else if (isDirectory("/mnt/usb1")) picker.path = "/mnt/usb1";
-    else picker.path = "/mnt";
-    picker.message = "SCANNING USB STORAGE...";
+    // Do not touch the filesystem until the first frame is already visible.
+    picker.path = "/mnt/usb0";
+    picker.message = "STARTING KILLER INSTINCT...";
 
     // Use the same proven double-buffer initialization and flip sequence
     // as the previously working PS4 display build.
@@ -344,7 +341,11 @@ int main()
     scene->FrameBufferSwap();
     ++frameId;
 
-    // The first visible image is already on screen before filesystem access.
+    // Only now inspect USB mount points and list their folders.
+    if (isDirectory("/mnt/usb0")) picker.path = "/mnt/usb0";
+    else if (isDirectory("/mnt/usb1")) picker.path = "/mnt/usb1";
+    else picker.path = "/mnt";
+
     int padHandle = -1;
     const bool controllerReady = initController(padHandle);
     if (controllerReady) printf("DualShock controller ready.\n");
