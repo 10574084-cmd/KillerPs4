@@ -122,56 +122,101 @@ size_t machine_state(uint8_t *buffer, bool load)
     return sizeof machine + sizeof hw;
 }
 
-bool ki1_core_init(char *error, size_t error_capacity)
+static bool file_size_is(const char *directory, const char *name, long expected)
+{
+    char path[4096];
+    const int n = snprintf(path, sizeof path, "%s/%s", directory, name);
+    if (n < 0 || (size_t)n >= sizeof path) return false;
+    FILE *file = fopen(path, "rb");
+    if (!file) return false;
+    const bool valid = fseek(file, 0, SEEK_END) == 0 && ftell(file) == expected;
+    fclose(file);
+    return valid;
+}
+
+static bool file_exists(const char *directory, const char *name,
+                        char *output, size_t capacity)
+{
+    const int n = snprintf(output, capacity, "%s/%s", directory, name);
+    if (n < 0 || (size_t)n >= capacity) return false;
+    FILE *file = fopen(output, "rb");
+    if (!file) return false;
+    fclose(file);
+    return true;
+}
+
+bool ki1_core_init_from_directory(const char *directory,
+                                  char *error, size_t error_capacity)
 {
     if (core_ready) return true;
-    if (!error || error_capacity == 0) return false;
+    if (!directory || !directory[0] || !error || error_capacity == 0) return false;
     error[0] = '\0';
 
+    struct stat directory_stat;
+    if (stat(directory, &directory_stat) != 0 || !S_ISDIR(directory_stat.st_mode)) {
+        snprintf(error, error_capacity, "Selected location is not a folder.");
+        return false;
+    }
+
     game_select(&game_ki1);
+    if (strlen(directory) >= sizeof game_directory) {
+        snprintf(error, error_capacity, "Selected folder path is too long.");
+        return false;
+    }
+    snprintf(game_directory, sizeof game_directory, "%s", directory);
 
     char boot_path[4096] = "";
-    if (!find_game_file("ki-l15d.u98", boot_path, sizeof boot_path,
-                        game_directory, sizeof game_directory)) {
-        if (!find_game_file("ki-l14.u98", boot_path, sizeof boot_path,
-                            game_directory, sizeof game_directory)) {
+    if (!file_size_is(directory, "ki-l15d.u98", KI1_ROM_SIZE)) {
+        if (!file_size_is(directory, "ki-l14.u98", KI1_ROM_SIZE)) {
             snprintf(error, error_capacity,
-                     "Missing KI1 boot ROM. Put ki-l15d.u98 or ki-l14.u98 in /data/KillerPs4/roms/kinst/.");
+                     "Missing boot ROM: ki-l15d.u98 or ki-l14.u98 (512 KiB).");
+            return false;
+        }
+        (void)file_exists(directory, "ki-l14.u98", boot_path, sizeof boot_path);
+    } else {
+        (void)file_exists(directory, "ki-l15d.u98", boot_path, sizeof boot_path);
+    }
+
+    for (int i = 0; i < 8; ++i) {
+        if (!file_size_is(directory, game.sound_roms[i], KI1_ROM_SIZE)) {
+            snprintf(error, error_capacity,
+                     "Missing or invalid sound ROM: %s (expected 512 KiB).",
+                     game.sound_roms[i]);
             return false;
         }
     }
 
-    if (!load_boot_rom(boot_path)) {
-        snprintf(error, error_capacity, "Could not read the 512 KiB boot ROM: %s", boot_path);
-        return false;
-    }
-
     char disk_path[4096] = "";
-    if (!find_game_file("kinst.chd", disk_path, sizeof disk_path, NULL, 0) &&
-        !find_game_file("kinst.raw", disk_path, sizeof disk_path, NULL, 0)) {
-        snprintf(error, error_capacity,
-                 "Missing KI1 hard-disk image. Put kinst.chd or kinst.raw beside the ROM files.");
+    if (!file_exists(directory, "kinst.chd", disk_path, sizeof disk_path) &&
+        !file_exists(directory, "kinst.raw", disk_path, sizeof disk_path)) {
+        snprintf(error, error_capacity, "Missing kinst.chd or kinst.raw in this folder.");
         return false;
     }
 
-    // The app's writable data directory is separate from its read-only package.
-    // If it cannot be created, the image still opens with its original settings.
+    if (!load_boot_rom(boot_path)) {
+        snprintf(error, error_capacity, "Could not read the selected boot ROM.");
+        return false;
+    }
+
+    // Save settings in the app's writable data area, not on the selected USB.
     (void)mkdir("/data/KillerPs4", 0777);
     const char *settings_path = "/data/KillerPs4/ki1.settings";
-    struct stat st;
-    if (stat("/data/KillerPs4", &st) != 0 || (st.st_mode & S_IFDIR) == 0) {
+    struct stat settings_stat;
+    if (stat("/data/KillerPs4", &settings_stat) != 0 ||
+        !S_ISDIR(settings_stat.st_mode)) {
         settings_path = NULL;
     }
 
     if (!ide_open(disk_path, settings_path, game.cyls, game.heads,
                   game.secs, game.serial_offset)) {
-        snprintf(error, error_capacity, "Could not open KI1 disk image: %s", disk_path);
+        snprintf(error, error_capacity, "Could not open the selected CHD/raw disk image.");
         return false;
     }
 
-    // Missing sound ROMs are non-fatal to the machine boot; UltraCombo leaves
-    // the DCS board initialized but silent when those files are unavailable.
-    (void)sound_init(game_directory);
+    if (!sound_init(game_directory)) {
+        snprintf(error, error_capacity, "Could not load all eight DCS sound ROMs.");
+        return false;
+    }
 
     hw.dsw = 0xffffffffu;
     cpu_reset();
@@ -181,6 +226,23 @@ bool ki1_core_init(char *error, size_t error_capacity)
 
     core_ready = true;
     return true;
+}
+
+bool ki1_core_init(char *error, size_t error_capacity)
+{
+    if (core_ready) return true;
+    if (!error || error_capacity == 0) return false;
+    error[0] = '\0';
+
+    for (size_t i = 0; data_directories[i]; ++i) {
+        char boot_path[4096];
+        if (file_exists(data_directories[i], "ki-l15d.u98", boot_path, sizeof boot_path) ||
+            file_exists(data_directories[i], "ki-l14.u98", boot_path, sizeof boot_path)) {
+            return ki1_core_init_from_directory(data_directories[i], error, error_capacity);
+        }
+    }
+    snprintf(error, error_capacity, "Select the folder containing your Killer Instinct files.");
+    return false;
 }
 
 void ki1_core_run_frame(uint16_t player1_buttons, uint16_t player2_buttons)
