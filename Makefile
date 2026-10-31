@@ -5,6 +5,7 @@ CONTENT_ID := IV0000-KIPT00001_00-KI1WIDETEST000001
 
 TOOLCHAIN := $(OO_PS4_TOOLCHAIN)
 PKGTOOLS := $(TOOLCHAIN)/bin/linux
+FSELF_TOOL ?= tools/bin/create-fself
 COMMONDIR ?= third_party/openorbis-sample-graphics
 BUILD_DIR := build
 ELF := $(BUILD_DIR)/ki1_widescreen_test.elf
@@ -45,7 +46,7 @@ $(ELF): $(OBJS)
 	$(LD) $(OBJS) -o $@ $(LDFLAGS)
 
 eboot.bin: $(ELF)
-	$(PKGTOOLS)/create-fself -in=$(ELF) -out=$(OELF) --eboot "eboot.bin" --paid 0x3100000000000001
+	$(FSELF_TOOL) -in=$(ELF) -out=$(OELF) --eboot "eboot.bin" --paid 0x3100000000000001
 	test -s eboot.bin
 
 sce_sys/icon0.png: tools/make_icon.py
