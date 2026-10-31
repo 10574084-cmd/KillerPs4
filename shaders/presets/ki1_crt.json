@@ -1,0 +1,19 @@
+{
+  "name": "Arcade CRT",
+  "description": "Optional scanline and aperture-mask presentation preset.",
+  "pipeline": ["passes/arcade_crt.frag"],
+  "source": {
+    "width": 320,
+    "height": 240,
+    "aspect_ratio": "4:3"
+  },
+  "uniforms": {
+    "u_scanline_strength": 0.18,
+    "u_mask_strength": 0.10,
+    "u_vignette": 0.12
+  },
+  "notes": [
+    "Keep the game viewport at 4:3.",
+    "This preset is an alternative to Lush Arcade, not a mandatory effect."
+  ]
+}
