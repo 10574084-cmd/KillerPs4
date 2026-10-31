@@ -1,4 +1,4 @@
-TITLE := KI1 Widescreen Test
+TITLE := Killer Instinct
 VERSION := 01.00
 TITLE_ID := KIPT00001
 CONTENT_ID := IV0000-KIPT00001_00-KI1WIDE000000001
@@ -8,8 +8,8 @@ PKGTOOLS := $(TOOLCHAIN)/bin/linux
 FSELF_TOOL ?= tools/bin/create-fself
 COMMONDIR ?= third_party/openorbis-sample-graphics
 BUILD_DIR := build
-ELF := $(BUILD_DIR)/ki1_widescreen_test.elf
-OELF := $(BUILD_DIR)/ki1_widescreen_test.oelf
+ELF := $(BUILD_DIR)/killer_instinct_ps4.elf
+OELF := $(BUILD_DIR)/killer_instinct_ps4.oelf
 PKG := $(CONTENT_ID).pkg
 
 TARGET_FLAGS := --target=x86_64-pc-freebsd12-elf -D_GNU_SOURCE -fPIC -funwind-tables -c \
@@ -31,7 +31,7 @@ endif
 OBJS := $(BUILD_DIR)/main.o $(BUILD_DIR)/graphics.o
 
 # Pinned UltraCombo machine core. It is cross-compiled as a standalone archive
-# first; the known-good framebuffer test executable does not link it yet.
+# first, then linked into the app which uses the in-app game-folder browser.
 ULTRACOMBO_DIR ?= deps/UltraCombo/src
 ULTRACOMBO_CHDR_INC := -I$(ULTRACOMBO_DIR)/third_party/libchdr/include \
     -I$(ULTRACOMBO_DIR)/third_party/libchdr/deps/lzma-26.02/include \
