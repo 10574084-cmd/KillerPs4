@@ -21,7 +21,7 @@ jobs:
           docker run --rm --user root \
             -v "${GITHUB_WORKSPACE}:/workspace" \
             -w /workspace \
-            openorbisofficial/toolchain:v0.5.4 \
+            openorbisofficial/toolchain:latest \
             bash -lc 'make clean all'
 
       - name: Upload test package
