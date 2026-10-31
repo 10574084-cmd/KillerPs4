@@ -17,7 +17,6 @@ constexpr int kWidth = 1920;
 constexpr int kHeight = 1080;
 constexpr int kGameX = 240;
 constexpr int kGameWidth = 1440;
-constexpr int kGameHeight = 1080;
 
 struct Glyph { char ch; uint8_t rows[7]; };
 static const Glyph kFont[] = {
