@@ -346,7 +346,7 @@ bool initController(int &handle)
 int main()
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
-    printf("Killer Instinct PS4 - select game folder.\\n");
+    printf("Killer Instinct PS4 - select game folder.\n");
 
     // Create the writable game-data directory immediately. This happens
     // before video/controller initialization, so folder creation does not
@@ -355,7 +355,7 @@ int main()
         ensureDirectory("/data/KillerRemakeP4") &&
         ensureDirectory("/data/KillerRemakeP4/roms") &&
         ensureDirectory("/data/KillerRemakeP4/roms/kinst");
-    printf("Internal game-data folder: %s\\n",
+    printf("Internal game-data folder: %s\n",
            internalDataReady ? "ready" : "creation failed");
 
     Scene2D *scene = new Scene2D(kWidth, kHeight, 4);
@@ -365,7 +365,7 @@ int main()
     }
 
     FolderPicker picker;
-    // The internal app-data folder is prepared only after the UI is visible.
+    // The internal app-data folder has already been prepared during startup.
     picker.path = "/data/KillerRemakeP4/roms/kinst";
     picker.message = internalDataReady
         ? "INTERNAL DATA FOLDER READY"
