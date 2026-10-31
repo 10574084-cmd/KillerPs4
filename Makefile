@@ -66,11 +66,11 @@ sce_sys/param.sfo: Makefile
 	$(PKGTOOLS)/PkgTool.Core sfo_setentry $@ TITLE_ID --type Utf8 --maxsize 12 --value '$(TITLE_ID)'
 	$(PKGTOOLS)/PkgTool.Core sfo_setentry $@ VERSION --type Utf8 --maxsize 8 --value '$(VERSION)'
 
-sce_module/libc.prx: | 
+sce_module/libc.prx:
 	mkdir -p sce_module
 	cp $(TOOLCHAIN)/bin/data/modules/libc.prx $@
 
-sce_module/libSceFios2.prx: |
+sce_module/libSceFios2.prx:
 	mkdir -p sce_module
 	cp $(TOOLCHAIN)/bin/data/modules/libSceFios2.prx $@
 
