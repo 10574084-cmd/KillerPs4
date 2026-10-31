@@ -213,6 +213,39 @@ void drawGameTestPattern(Scene2D *s, bool grid, bool safeFrame)
     }
 }
 
+void renderBothBuffers(Scene2D *s, bool backdrop, bool grid,
+                       bool safeFrame, int glow, int activeBuffer)
+{
+    for (int buffer = 0; buffer < 2; ++buffer) {
+        s->SetActiveFrameBuffer(buffer);
+        drawBackdrop(s, backdrop, glow);
+        drawGameTestPattern(s, grid, safeFrame);
+
+        // Keep all test labels inside the 240-pixel side gutters so the
+        // central 4:3 content area remains completely unobstructed.
+        panel(s, 16, 24, 208, 104, rgb(8, 12, 25), rgb(65, 172, 213));
+        text(s, "KI1 16:9", 28, 42, 3, rgb(240, 247, 255));
+        text(s, "TEST", 28, 76, 3, rgb(240, 247, 255));
+
+        panel(s, 16, 176, 208, 392, rgb(8, 12, 25), rgb(65, 172, 213));
+        text(s, "CROSS", 28, 197, 3, rgb(232, 237, 248));
+        text(s, "SIDES", 28, 228, 3, rgb(167, 194, 226));
+        text(s, "TRIANGLE", 28, 285, 2, rgb(232, 237, 248));
+        text(s, "GRID", 28, 316, 3, rgb(167, 194, 226));
+        text(s, "SQUARE", 28, 373, 3, rgb(232, 237, 248));
+        text(s, "SAFE", 28, 404, 3, rgb(167, 194, 226));
+        text(s, "LEFT RIGHT", 28, 461, 2, rgb(232, 237, 248));
+        text(s, "LIGHT", 28, 492, 3, rgb(167, 194, 226));
+        text(s, "CIRCLE", 28, 525, 3, rgb(232, 237, 248));
+
+        panel(s, 1696, 24, 208, 104, rgb(8, 12, 25), rgb(65, 172, 213));
+        text(s, "4:3 AREA", 1708, 42, 3, rgb(240, 247, 255));
+        text(s, "1440X1080", 1708, 78, 2, rgb(167, 194, 226));
+    }
+
+    s->SetActiveFrameBuffer(activeBuffer);
+}
+
 bool initController(int &handle)
 {
     if (scePadInit() != 0) return false;
@@ -251,6 +284,9 @@ int main()
     int glow = 5;
     uint32_t previousButtons = 0;
     int frameId = 0;
+    int activeBuffer = 0;
+
+    renderBothBuffers(&scene, backdrop, grid, safeFrame, glow, activeBuffer);
 
     for (;;) {
         uint32_t pressed = 0;
@@ -264,45 +300,38 @@ int main()
             }
         }
 
-        if (pressed & ORBIS_PAD_BUTTON_CROSS) backdrop = !backdrop;
-        if (pressed & ORBIS_PAD_BUTTON_TRIANGLE) grid = !grid;
-        if (pressed & ORBIS_PAD_BUTTON_SQUARE) safeFrame = !safeFrame;
-        if (pressed & ORBIS_PAD_BUTTON_LEFT) glow = std::max(0, glow - 1);
-        if (pressed & ORBIS_PAD_BUTTON_RIGHT) glow = std::min(10, glow + 1);
+        bool changed = false;
+        if (pressed & ORBIS_PAD_BUTTON_CROSS) { backdrop = !backdrop; changed = true; }
+        if (pressed & ORBIS_PAD_BUTTON_TRIANGLE) { grid = !grid; changed = true; }
+        if (pressed & ORBIS_PAD_BUTTON_SQUARE) { safeFrame = !safeFrame; changed = true; }
+        if (pressed & ORBIS_PAD_BUTTON_LEFT) {
+            const int next = std::max(0, glow - 1);
+            changed = changed || next != glow;
+            glow = next;
+        }
+        if (pressed & ORBIS_PAD_BUTTON_RIGHT) {
+            const int next = std::min(10, glow + 1);
+            changed = changed || next != glow;
+            glow = next;
+        }
         if (pressed & ORBIS_PAD_BUTTON_CIRCLE) {
             backdrop = true;
             grid = false;
             safeFrame = false;
             glow = 5;
+            changed = true;
         }
 
-        drawBackdrop(&scene, backdrop, glow);
-        drawGameTestPattern(&scene, grid, safeFrame);
+        // Both framebuffers are redrawn only after an input change. The
+        // static test screen then flips without repainting every pixel.
+        if (changed) {
+            renderBothBuffers(&scene, backdrop, grid, safeFrame, glow, activeBuffer);
+        }
 
-        // Keep all test labels inside the 240-pixel side gutters so the
-        // central 4:3 content area remains completely unobstructed.
-        panel(&scene, 16, 24, 208, 104, rgb(8, 12, 25), rgb(65, 172, 213));
-        text(&scene, "KI1 16:9", 28, 42, 3, rgb(240, 247, 255));
-        text(&scene, "TEST", 28, 76, 3, rgb(240, 247, 255));
-
-        panel(&scene, 16, 176, 208, 392, rgb(8, 12, 25), rgb(65, 172, 213));
-        text(&scene, "CROSS", 28, 197, 3, rgb(232, 237, 248));
-        text(&scene, "SIDES", 28, 228, 3, rgb(167, 194, 226));
-        text(&scene, "TRIANGLE", 28, 285, 2, rgb(232, 237, 248));
-        text(&scene, "GRID", 28, 316, 3, rgb(167, 194, 226));
-        text(&scene, "SQUARE", 28, 373, 3, rgb(232, 237, 248));
-        text(&scene, "SAFE", 28, 404, 3, rgb(167, 194, 226));
-        text(&scene, "LEFT RIGHT", 28, 461, 2, rgb(232, 237, 248));
-        text(&scene, "LIGHT", 28, 492, 3, rgb(167, 194, 226));
-        text(&scene, "CIRCLE", 28, 525, 3, rgb(232, 237, 248));
-
-        panel(&scene, 1696, 24, 208, 104, rgb(8, 12, 25), rgb(65, 172, 213));
-        text(&scene, "4:3 AREA", 1708, 42, 3, rgb(240, 247, 255));
-        text(&scene, "1440X1080", 1708, 78, 2, rgb(167, 194, 226));
-
+        scene.SetActiveFrameBuffer(activeBuffer);
         scene.SubmitFlip(frameId);
         scene.FrameWait(frameId);
-        scene.FrameBufferSwap();
+        activeBuffer = 1 - activeBuffer;
         ++frameId;
     }
 
