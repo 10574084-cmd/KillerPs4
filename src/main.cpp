@@ -195,7 +195,7 @@ void drawArcadeScene(Scene2D *s, const uint32_t *frame, int glow)
 
 
 struct FolderPicker {
-    std::string path = "/mnt";
+    std::string path = "/mnt/usb0";
     std::vector<std::string> folders;
     size_t selected = 0;
     std::string message = "OPEN YOUR USB, THEN THE FOLDER WITH KI1 FILES";
@@ -324,25 +324,40 @@ int main()
     }
 
     FolderPicker picker;
-    refreshFolders(picker);
+    // Select a direct USB mount before touching its directory entries.
+    // This also makes the initial screen appear before any storage scan.
+    if (isDirectory("/mnt/usb0")) picker.path = "/mnt/usb0";
+    else if (isDirectory("/mnt/usb1")) picker.path = "/mnt/usb1";
+    else picker.path = "/mnt";
+    picker.message = "SCANNING USB STORAGE...";
 
-    int activeBuffer = 0;
-    int frameId = 0;
+    // Use the same proven double-buffer initialization and flip sequence
+    // as the previously working PS4 display build.
     for (int buffer = 0; buffer < 2; ++buffer) {
         scene->SetActiveFrameBuffer(buffer);
         drawFolderPicker(scene, picker);
     }
-    scene->SetActiveFrameBuffer(activeBuffer);
+    int frameId = 0;
+    scene->SetActiveFrameBuffer(0);
     scene->SubmitFlip(frameId);
     scene->FrameWait(frameId);
     scene->FrameBufferSwap();
-    activeBuffer = 1;
     ++frameId;
 
+    // The first visible image is already on screen before filesystem access.
     int padHandle = -1;
     const bool controllerReady = initController(padHandle);
     if (controllerReady) printf("DualShock controller ready.\n");
     else printf("Controller initialization failed.\n");
+
+    refreshFolders(picker);
+    drawFolderPicker(scene, picker);
+    scene->SubmitFlip(frameId);
+    scene->FrameWait(frameId);
+    scene->FrameBufferSwap();
+    ++frameId;
+    // Synchronize the other framebuffer with the newly scanned listing.
+    drawFolderPicker(scene, picker);
 
     uint32_t previousButtons = 0;
     bool gameReady = false;
@@ -416,19 +431,18 @@ int main()
             int16_t discardedAudio[2048];
             while (ki1_core_fetch_audio(discardedAudio, 2048) > 0) {}
         } else if (pickerChanged) {
-            // Keep both registered framebuffers in sync while the picker is idle.
-            for (int buffer = 0; buffer < 2; ++buffer) {
-                scene->SetActiveFrameBuffer(buffer);
-                drawFolderPicker(scene, picker);
-            }
+            drawFolderPicker(scene, picker);
         }
 
-        scene->SetActiveFrameBuffer(activeBuffer);
+        // Keep the exact submit/wait/swap order used by the known-good build.
         scene->SubmitFlip(frameId);
         scene->FrameWait(frameId);
         scene->FrameBufferSwap();
-        activeBuffer = 1 - activeBuffer;
         ++frameId;
+
+        // Mirror changed picker contents to the new back buffer.
+        if (!gameReady && pickerChanged)
+            drawFolderPicker(scene, picker);
     }
 
     return 0;
