@@ -271,15 +271,16 @@ int main()
     // Keep the graphics context alive for the complete application lifetime.
     // The upstream sample declares a destructor but does not define one.
     Scene2D *scene = new Scene2D(kWidth, kHeight, 4);
-    if (!scene->Init(0x02000000, 2)) {
+    if (!scene->Init(0x0C000000, 2)) {
         printf("Video output initialization failed.\n");
         for (;;) sceKernelUsleep(250000);
     }
 
+    // Do not initialize controller services until after the first image
+    // has been submitted. This keeps input-service initialization from
+    // delaying the first visible frame on consoles with a slow user service.
     int padHandle = -1;
-    const bool controllerReady = initController(padHandle);
-    if (controllerReady) printf("DualShock 4 input ready.\n");
-    else printf("Controller unavailable; default widescreen preview will continue.\n");
+    bool controllerReady = false;
 
     bool backdrop = true;
     bool grid = false;
@@ -296,6 +297,11 @@ int main()
     ++frameId;
     activeBuffer = 1;
     renderBuffer(scene, activeBuffer, backdrop, grid, safeFrame, glow);
+
+    // Present a known-good graphics frame before touching pad/user services.
+    controllerReady = initController(padHandle);
+    if (controllerReady) printf("DualShock 4 input ready.\n");
+    else printf("Controller unavailable; default widescreen preview will continue.\n");
 
     for (;;) {
         uint32_t pressed = 0;
