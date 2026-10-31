@@ -14,7 +14,7 @@ PKG := $(CONTENT_ID).pkg
 TARGET_FLAGS := --target=x86_64-pc-freebsd12-elf -fPIC -funwind-tables -c \
     -isysroot $(TOOLCHAIN) -isystem $(TOOLCHAIN)/include
 CXXFLAGS := $(TARGET_FLAGS) -isystem $(TOOLCHAIN)/include/c++/v1 \
-    -I$(COMMONDIR) -Isrc -O2 -Wall -Wextra
+    -I$(COMMONDIR) -Isrc -std=c++17 -O2 -Wall -Wextra
 LIBS := -lc -lkernel -lc++ -lSceVideoOut -lScePad -lSceUserService
 LDFLAGS := -m elf_x86_64 -pie --script $(TOOLCHAIN)/link.x --eh-frame-hdr \
     -L$(TOOLCHAIN)/lib $(LIBS) $(TOOLCHAIN)/lib/crt1.o
