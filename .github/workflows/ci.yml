@@ -17,3 +17,15 @@ jobs:
         uses: actions/checkout@v4
       - name: Compile and run KI1 data-manifest tests
         run: sh tools/test_ki1_data.sh
+
+  shader-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Install GLSL validator
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y glslang-tools
+      - name: Validate shader programs and preset manifests
+        run: sh tools/test_shaders.sh
