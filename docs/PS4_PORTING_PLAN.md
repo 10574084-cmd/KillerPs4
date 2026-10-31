@@ -35,11 +35,13 @@ Do not commit generated C or native modules derived from the commercial game ROM
    - Treat this as aspect-preserving presentation, not a claim of extra game-world visibility.
    - Convert the emulated audio stream to the PS4 output format without tying emulation speed to rendering.
 
-3. **KI1 emulator core**
-   - Import the required UltraCombo source and preserve its MIT license and third-party notices.
-   - Separate machine initialization, one-frame execution, frame-buffer output and sound sample retrieval from the desktop UI.
-   - Add a console build flag that omits runtime compiler/process launching.
-   - Build and test the interpreter path before enabling any optional optimization.
+3. **KI1 emulator core — initial cross-compile milestone reached**
+   - Pin the UltraCombo source revision and preserve its MIT notice.
+   - Add a PS4-facing adapter for machine initialization, one-frame execution, active-low arcade inputs, RGB frame extraction and DCS sample retrieval.
+   - Cross-compile the KI1 interpreter, board profile, IDE/CHD, DCS/ADSP and state modules into `build/libki1core.a` in CI.
+   - The archive is currently a separate artifact and is not linked into the working display-test EBOOT.
+   - Next: resolve link dependencies, link a separate experimental EBOOT, then connect the 320×240 frame output, pad input and DCS audio to the PS4 app.
+   - Keep runtime compiler/process launching disabled for the first console build and measure interpreter performance before calling the port playable.
 
 4. **Local game-data loader**
    - Read the KI1 boot ROM, eight sound ROMs and CHD/raw disk from user-provided storage.
