@@ -324,9 +324,10 @@ int main()
     }
 
     FolderPicker picker;
-    // Do not touch the filesystem until the first frame is already visible.
+    // Keep startup independent of USB mount state. Scanning is user-triggered
+    // from the live picker after the first frame has been presented.
     picker.path = "/mnt/usb0";
-    picker.message = "STARTING KILLER INSTINCT...";
+    picker.message = "PRESS OPTIONS TO SCAN USB STORAGE";
 
     // Use the same proven double-buffer initialization and flip sequence
     // as the previously working PS4 display build.
@@ -341,27 +342,16 @@ int main()
     scene->FrameBufferSwap();
     ++frameId;
 
-    // Only now inspect USB mount points and list their folders.
-    if (isDirectory("/mnt/usb0")) picker.path = "/mnt/usb0";
-    else if (isDirectory("/mnt/usb1")) picker.path = "/mnt/usb1";
-    else picker.path = "/mnt";
-
+    // Initialize the controller after the startup frame. Do not scan USB
+    // or /mnt here: directory I/O can stall before the UI loop is running.
     int padHandle = -1;
     const bool controllerReady = initController(padHandle);
     if (controllerReady) printf("DualShock controller ready.\n");
     else printf("Controller initialization failed.\n");
 
-    refreshFolders(picker);
-    drawFolderPicker(scene, picker);
-    scene->SubmitFlip(frameId);
-    scene->FrameWait(frameId);
-    scene->FrameBufferSwap();
-    ++frameId;
-    // Synchronize the other framebuffer with the newly scanned listing.
-    drawFolderPicker(scene, picker);
-
     uint32_t previousButtons = 0;
     bool gameReady = false;
+    bool storageScanned = false;
     int glow = 5;
     static uint32_t gameFrame[320 * 240];
     double frameAccumulator = 0.0;
@@ -391,30 +381,42 @@ int main()
                 if (picker.selected + 1 < picker.folders.size()) ++picker.selected;
                 pickerChanged = true;
             }
+            if (pressed & ORBIS_PAD_BUTTON_OPTIONS) {
+                // Scan only on demand, while the UI loop is already running.
+                if (isDirectory("/mnt/usb0")) picker.path = "/mnt/usb0";
+                else if (isDirectory("/mnt/usb1")) picker.path = "/mnt/usb1";
+                else picker.path = "/mnt";
+                refreshFolders(picker);
+                storageScanned = true;
+                pickerChanged = true;
+            }
             if (pressed & ORBIS_PAD_BUTTON_CROSS) {
-                pickerEnter(picker);
+                if (storageScanned) pickerEnter(picker);
+                else picker.message = "PRESS OPTIONS TO SCAN USB STORAGE";
                 pickerChanged = true;
             }
             if (pressed & ORBIS_PAD_BUTTON_CIRCLE) {
-                pickerUp(picker);
-                pickerChanged = true;
-            }
-            if (pressed & ORBIS_PAD_BUTTON_OPTIONS) {
-                refreshFolders(picker);
+                if (storageScanned) pickerUp(picker);
+                else picker.message = "PRESS OPTIONS TO SCAN USB STORAGE";
                 pickerChanged = true;
             }
             if (pressed & ORBIS_PAD_BUTTON_TRIANGLE) {
-                coreError[0] = '\0';
-                if (ki1_core_init_from_directory(picker.path.c_str(),
-                                                 coreError, sizeof(coreError))) {
-                    gameReady = true;
-                    ki1_core_run_frame(0, 0);
-                    ki1_core_copy_rgb(gameFrame);
-                    printf("Killer Instinct core initialized from %s\n", picker.path.c_str());
-                } else {
-                    picker.message = coreError[0] ? coreError : "GAME FILES NOT FOUND";
+                if (!storageScanned) {
+                    picker.message = "PRESS OPTIONS TO SCAN USB STORAGE FIRST";
                     pickerChanged = true;
-                    printf("Folder rejected: %s\n", picker.message.c_str());
+                } else {
+                    coreError[0] = '\0';
+                    if (ki1_core_init_from_directory(picker.path.c_str(),
+                                                     coreError, sizeof(coreError))) {
+                        gameReady = true;
+                        ki1_core_run_frame(0, 0);
+                        ki1_core_copy_rgb(gameFrame);
+                        printf("Killer Instinct core initialized from %s\n", picker.path.c_str());
+                    } else {
+                        picker.message = coreError[0] ? coreError : "GAME FILES NOT FOUND";
+                        pickerChanged = true;
+                        printf("Folder rejected: %s\n", picker.message.c_str());
+                    }
                 }
             }
         }
