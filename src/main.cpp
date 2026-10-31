@@ -9,6 +9,7 @@
 #include <orbis/UserService.h>
 
 #include "graphics.h"
+#include "ki1_core_port.h"
 
 std::stringstream debugLogStream;
 
@@ -247,6 +248,57 @@ void renderBuffer(Scene2D *s, int buffer, bool backdrop, bool grid,
     drawTestScene(s, backdrop, grid, safeFrame, glow);
 }
 
+uint16_t mapArcadeButtons(uint32_t buttons)
+{
+    uint16_t mapped = 0;
+
+    if (buttons & ORBIS_PAD_BUTTON_CROSS)    mapped |= 0x0001; // punch 1
+    if (buttons & ORBIS_PAD_BUTTON_SQUARE)   mapped |= 0x0002; // punch 2
+    if (buttons & ORBIS_PAD_BUTTON_TRIANGLE) mapped |= 0x0004; // punch 3
+    if (buttons & ORBIS_PAD_BUTTON_CIRCLE)   mapped |= 0x0008; // kick 1
+    if (buttons & ORBIS_PAD_BUTTON_L1)       mapped |= 0x0010; // kick 2
+    if (buttons & ORBIS_PAD_BUTTON_R1)       mapped |= 0x0020; // kick 3
+
+    if (buttons & ORBIS_PAD_BUTTON_UP)    mapped |= 0x0040;
+    if (buttons & ORBIS_PAD_BUTTON_DOWN)  mapped |= 0x0080;
+    if (buttons & ORBIS_PAD_BUTTON_LEFT)  mapped |= 0x0100;
+    if (buttons & ORBIS_PAD_BUTTON_RIGHT) mapped |= 0x0200;
+    if (buttons & ORBIS_PAD_BUTTON_OPTIONS) mapped |= 0x0400; // start
+    if (buttons & ORBIS_PAD_BUTTON_L3)      mapped |= 0x0800; // coin
+
+    return mapped;
+}
+
+void drawArcadeScene(Scene2D *s, const uint32_t *frame, int glow)
+{
+    drawBackdrop(s, true, glow);
+    s->DrawRGBImage(kGameX, 0, kGameWidth, kHeight, frame, 320, 240);
+
+    panel(s, 16, 24, 208, 104, rgb(8, 12, 25), rgb(65, 172, 213));
+    text(s, "KILLER INSTINCT", 28, 42, 2, rgb(240, 247, 255));
+    text(s, "KI1 ARCADE", 28, 78, 2, rgb(167, 194, 226));
+
+    panel(s, 16, 176, 208, 392, rgb(8, 12, 25), rgb(65, 172, 213));
+    text(s, "D PAD", 28, 197, 3, rgb(232, 237, 248));
+    text(s, "MOVE", 28, 228, 3, rgb(167, 194, 226));
+    text(s, "CROSS SQUARE", 28, 285, 2, rgb(232, 237, 248));
+    text(s, "TRIANGLE", 28, 316, 2, rgb(232, 237, 248));
+    text(s, "CIRCLE L1 R1", 28, 373, 2, rgb(232, 237, 248));
+    text(s, "OPTIONS START", 28, 430, 2, rgb(167, 194, 226));
+    text(s, "L3 COIN", 28, 487, 2, rgb(167, 194, 226));
+
+    panel(s, 1696, 24, 208, 104, rgb(8, 12, 25), rgb(65, 172, 213));
+    text(s, "4:3 AREA", 1708, 42, 3, rgb(240, 247, 255));
+    text(s, "1440X1080", 1708, 78, 2, rgb(167, 194, 226));
+
+    panel(s, 1696, 176, 208, 392, rgb(8, 12, 25), rgb(65, 172, 213));
+    text(s, "CORE", 1708, 197, 3, rgb(232, 237, 248));
+    text(s, "INTERPRETER", 1708, 228, 2, rgb(167, 194, 226));
+    text(s, "SILENT TEST", 1708, 285, 2, rgb(240, 190, 120));
+    text(s, "AUDIO NOT", 1708, 342, 2, rgb(167, 194, 226));
+    text(s, "CONNECTED", 1708, 373, 2, rgb(167, 194, 226));
+}
+
 bool initController(int &handle)
 {
     if (scePadInit() != 0) return false;
@@ -278,8 +330,9 @@ int main()
     bool grid = false;
     bool safeFrame = false;
     int glow = 5;
+    static uint32_t gameFrame[320 * 240];
 
-    // Prepare both buffers before the first flip, so the first frame is valid.
+    // Prepare and present a known-good frame before loading game files.
     renderBuffer(scene, 0, backdrop, grid, safeFrame, glow);
     renderBuffer(scene, 1, backdrop, grid, safeFrame, glow);
 
@@ -290,6 +343,18 @@ int main()
     scene->FrameBufferSwap();
     ++frameId;
 
+    // The user supplies their own KI1 files under /data/KillerPs4 or a
+    // supported USB folder. The display test remains available without them.
+    char coreError[512] = {};
+    const bool gameReady = ki1_core_init(coreError, sizeof(coreError));
+    if (gameReady) {
+        printf("KI1 interpreter core initialized.\\n");
+        ki1_core_run_frame(0, 0);
+        ki1_core_copy_rgb(gameFrame);
+    } else {
+        printf("KI1 core not started: %s\\n", coreError);
+    }
+
     // Bring up controller services only after the first frame is on screen.
     int padHandle = -1;
     const bool controllerReady = initController(padHandle);
@@ -297,61 +362,78 @@ int main()
     else printf("Controller unavailable; display remains active.\\n");
 
     uint32_t previousButtons = 0;
+    double frameAccumulator = 0.0;
     for (;;) {
         uint32_t pressed = 0;
+        uint32_t currentButtons = 0;
         if (controllerReady && padHandle >= 0) {
             OrbisPadData pad = {};
             if (scePadReadState(padHandle, &pad) == 0) {
-                pressed = pad.buttons & ~previousButtons;
-                previousButtons = pad.buttons;
+                currentButtons = pad.buttons;
+                pressed = currentButtons & ~previousButtons;
+                previousButtons = currentButtons;
             } else {
                 previousButtons = 0;
             }
         }
 
         bool changed = false;
-        if (pressed & ORBIS_PAD_BUTTON_CROSS) {
-            backdrop = !backdrop;
-            changed = true;
-        }
-        if (pressed & ORBIS_PAD_BUTTON_TRIANGLE) {
-            grid = !grid;
-            changed = true;
-        }
-        if (pressed & ORBIS_PAD_BUTTON_SQUARE) {
-            safeFrame = !safeFrame;
-            changed = true;
-        }
-        if (pressed & ORBIS_PAD_BUTTON_LEFT) {
-            const int next = std::max(0, glow - 1);
-            changed = changed || next != glow;
-            glow = next;
-        }
-        if (pressed & ORBIS_PAD_BUTTON_RIGHT) {
-            const int next = std::min(10, glow + 1);
-            changed = changed || next != glow;
-            glow = next;
-        }
-        if (pressed & ORBIS_PAD_BUTTON_CIRCLE) {
-            backdrop = true;
-            grid = false;
-            safeFrame = false;
-            glow = 5;
-            changed = true;
-        }
+        if (!gameReady) {
+            if (pressed & ORBIS_PAD_BUTTON_CROSS) {
+                backdrop = !backdrop;
+                changed = true;
+            }
+            if (pressed & ORBIS_PAD_BUTTON_TRIANGLE) {
+                grid = !grid;
+                changed = true;
+            }
+            if (pressed & ORBIS_PAD_BUTTON_SQUARE) {
+                safeFrame = !safeFrame;
+                changed = true;
+            }
+            if (pressed & ORBIS_PAD_BUTTON_LEFT) {
+                const int next = std::max(0, glow - 1);
+                changed = changed || next != glow;
+                glow = next;
+            }
+            if (pressed & ORBIS_PAD_BUTTON_RIGHT) {
+                const int next = std::min(10, glow + 1);
+                changed = changed || next != glow;
+                glow = next;
+            }
+            if (pressed & ORBIS_PAD_BUTTON_CIRCLE) {
+                backdrop = true;
+                grid = false;
+                safeFrame = false;
+                glow = 5;
+                changed = true;
+            }
+            if (changed)
+                drawTestScene(scene, backdrop, grid, safeFrame, glow);
+        } else {
+            // A 60 Hz display presents the arcade's ~58.96 Hz image. The
+            // accumulator holds a frame occasionally instead of speeding up.
+            frameAccumulator += 58.9634 / 60.0;
+            if (frameAccumulator >= 1.0) {
+                frameAccumulator -= 1.0;
+                ki1_core_run_frame(mapArcadeButtons(currentButtons), 0);
+                ki1_core_copy_rgb(gameFrame);
+            }
+            drawArcadeScene(scene, gameFrame, glow);
 
-        // Draw into the back buffer, then present it using the official
-        // OpenOrbis submit/wait/swap sequence.
-        if (changed)
-            drawTestScene(scene, backdrop, grid, safeFrame, glow);
+            // Keep the DCS queue bounded. PS4 audio output is the next step.
+            int16_t discardedAudio[2048];
+            while (ki1_core_fetch_audio(discardedAudio, 2048) > 0) {}
+        }
 
         scene->SubmitFlip(frameId);
         scene->FrameWait(frameId);
         scene->FrameBufferSwap();
         ++frameId;
 
-        // Keep the other buffer synchronized after a settings change.
-        if (changed)
+        // In test mode both registered buffers must show the same settings.
+        // Game mode redraws the next back buffer on the next loop iteration.
+        if (!gameReady && changed)
             drawTestScene(scene, backdrop, grid, safeFrame, glow);
     }
 
