@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <cerrno>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -207,6 +208,13 @@ bool isDirectory(const std::string &path)
     return stat(path.c_str(), &st) == 0 && S_ISDIR(st.st_mode);
 }
 
+bool ensureDirectory(const std::string &path)
+{
+    if (isDirectory(path)) return true;
+    if (mkdir(path.c_str(), 0777) == 0) return true;
+    return errno == EEXIST && isDirectory(path);
+}
+
 std::string joinPath(const std::string &base, const std::string &name)
 {
     if (base == "/") return base + name;
@@ -237,6 +245,27 @@ void refreshFolders(FolderPicker &picker)
     picker.message = picker.folders.empty()
         ? "NO SUBFOLDERS - TRIANGLE SELECTS THIS FOLDER"
         : "X OPEN FOLDER - TRIANGLE USE THIS FOLDER";
+}
+
+bool prepareInternalStorage(FolderPicker &picker)
+{
+    // Keep user files outside the read-only App0 package.
+    const char *paths[] = {
+        "/data/KillerRemakeP4",
+        "/data/KillerRemakeP4/roms",
+        "/data/KillerRemakeP4/roms/kinst"
+    };
+    for (const char *path : paths) {
+        if (!ensureDirectory(path)) {
+            picker.message = "CANNOT CREATE INTERNAL DATA FOLDER";
+            return false;
+        }
+    }
+
+    picker.path = "/data/KillerRemakeP4/roms/kinst";
+    refreshFolders(picker);
+    picker.message = "COPY KI1 FILES HERE THEN TRIANGLE";
+    return true;
 }
 
 void pickerEnter(FolderPicker &picker)
@@ -292,7 +321,9 @@ void drawFolderPicker(Scene2D *s, const FolderPicker &picker)
     }
 
     text(s, picker.message.c_str(), 205, 905, 2, rgb(255, 201, 117));
-    text(s, "UP DOWN MOVE   X OPEN   CIRCLE UP   TRIANGLE SELECT", 205, 955, 2,
+    text(s, "UP DOWN MOVE   X OPEN   CIRCLE UP   TRIANGLE SELECT", 205, 945, 2,
+         rgb(185, 204, 231));
+    text(s, "OPTIONS INTERNAL DATA   SQUARE USB", 205, 975, 2,
          rgb(185, 204, 231));
 }
 
@@ -324,10 +355,9 @@ int main()
     }
 
     FolderPicker picker;
-    // Keep startup independent of USB mount state. Scanning is user-triggered
-    // from the live picker after the first frame has been presented.
-    picker.path = "/mnt/usb0";
-    picker.message = "PRESS OPTIONS TO SCAN USB STORAGE";
+    // The internal app-data folder is prepared only after the UI is visible.
+    picker.path = "/data/KillerRemakeP4/roms/kinst";
+    picker.message = "PRESS OPTIONS TO CREATE INTERNAL DATA FOLDER";
 
     // Use the same proven double-buffer initialization and flip sequence
     // as the previously working PS4 display build.
@@ -382,27 +412,38 @@ int main()
                 pickerChanged = true;
             }
             if (pressed & ORBIS_PAD_BUTTON_OPTIONS) {
-                // Scan only on demand, while the UI loop is already running.
+                // Method 2: create and open the app's writable internal folder.
+                storageScanned = prepareInternalStorage(picker);
+                pickerChanged = true;
+            }
+            if (pressed & ORBIS_PAD_BUTTON_SQUARE) {
+                // USB browsing remains available as an alternate source.
                 if (isDirectory("/mnt/usb0")) picker.path = "/mnt/usb0";
                 else if (isDirectory("/mnt/usb1")) picker.path = "/mnt/usb1";
-                else picker.path = "/mnt";
-                refreshFolders(picker);
-                storageScanned = true;
-                pickerChanged = true;
+                else {
+                    picker.message = "NO USB STORAGE MOUNTED";
+                    pickerChanged = true;
+                }
+                if (isDirectory(picker.path) &&
+                    (picker.path == "/mnt/usb0" || picker.path == "/mnt/usb1")) {
+                    refreshFolders(picker);
+                    storageScanned = true;
+                    pickerChanged = true;
+                }
             }
             if (pressed & ORBIS_PAD_BUTTON_CROSS) {
                 if (storageScanned) pickerEnter(picker);
-                else picker.message = "PRESS OPTIONS TO SCAN USB STORAGE";
+                else picker.message = "PRESS OPTIONS TO CREATE INTERNAL FOLDER";
                 pickerChanged = true;
             }
             if (pressed & ORBIS_PAD_BUTTON_CIRCLE) {
                 if (storageScanned) pickerUp(picker);
-                else picker.message = "PRESS OPTIONS TO SCAN USB STORAGE";
+                else picker.message = "PRESS OPTIONS TO CREATE INTERNAL FOLDER";
                 pickerChanged = true;
             }
             if (pressed & ORBIS_PAD_BUTTON_TRIANGLE) {
                 if (!storageScanned) {
-                    picker.message = "PRESS OPTIONS TO SCAN USB STORAGE FIRST";
+                    picker.message = "PRESS OPTIONS TO PREPARE INTERNAL FOLDER FIRST";
                     pickerChanged = true;
                 } else {
                     coreError[0] = '\0';

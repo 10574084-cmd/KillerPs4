@@ -12,7 +12,7 @@ Native PlayStation 4 homebrew port project for **Killer Instinct (arcade, 1994)*
 
 **Early porting stage — not playable yet.**
 
-A portable KI1 data-manifest scanner and host tests are present in `src/ki1_data.c`. The PS4 application now opens an in-app folder browser. Use the controller to navigate USB storage and select the folder containing the extracted `kinst` files. The app checks the boot ROM, all eight sound ROMs, and the CHD/raw disk before starting the emulator core. The port remains experimental and has not yet been validated as playable on a console.
+A portable KI1 data-manifest scanner and host tests are present in `src/ki1_data.c`. The PS4 application opens an in-app folder browser. Press Options to create and open `/data/KillerRemakeP4/roms/kinst` in internal app data, or Square to browse USB storage. Place your own extracted `kinst` files in one folder and select that folder. The app checks the boot ROM, all eight sound ROMs, and the CHD/raw disk before starting the emulator core. The port remains experimental and has not yet been validated as playable on a console.
 
 ## Emulation approach
 
@@ -31,7 +31,7 @@ The KI1 set normally needs:
 - Eight sound ROMs: `u10-l1`, `u11-l1`, `u12-l1`, `u13-l1`, `u33-l1`, `u34-l1`, `u35-l1`, `u36-l1`.
 - Hard-disk image: `kinst.chd` (or a raw `kinst.raw` image).
 
-The first manifest module selects a valid L1.5D or L1.4 boot ROM, checks the eight sound ROM sizes and CRC32 values, and checks the raw disk size or the CHD file signature. Full CHD integrity verification and wiring the report into a PS4 loader are still pending. The folder browser starts at `/mnt`. Cross opens a folder, Circle goes up one level, Triangle selects the current folder, and Options refreshes the listing.
+The first manifest module selects a valid L1.5D or L1.4 boot ROM, checks the eight sound ROM sizes and CRC32 values, and checks the raw disk size or the CHD file signature. Full CHD integrity verification and wiring the report into a PS4 loader are still pending. The internal folder is `/data/KillerRemakeP4/roms/kinst`. Options prepares it, Square switches to USB storage, Cross opens a folder, Circle goes up one level, and Triangle selects the current folder.
 
 ## Video and shader target
 
@@ -52,7 +52,7 @@ Nearest-neighbour and bilinear scaling remain independent of the Lush Arcade / C
 
 The host-only manifest tests can be run with `sh tools/test_ki1_data.sh`. Shader syntax and preset JSON are checked with `sh tools/test_shaders.sh`.
 
-The workflow `.github/workflows/ps4-widescreen-test.yml` builds an experimental Killer Instinct PS4 PKG (version 01.02) using OpenOrbis and uploads the `Killer-Instinct-PS4` artifact. A successful Actions run confirms compilation and packaging only; it does not prove the emulator boots or runs at full speed on hardware.
+The workflow `.github/workflows/ps4-widescreen-test.yml` builds an experimental Killer Instinct PS4 PKG (version 01.03) using OpenOrbis and uploads the `Killer-Instinct-PS4` artifact. A successful Actions run confirms compilation and packaging only; it does not prove the emulator boots or runs at full speed on hardware.
 
 The real KI1 ELF/PKG is not ready: the machine core has an initial PS4 adapter and a separate cross-compile target, but is not yet linked to the running app or connected to the renderer/audio output. See [docs/PS4_PORTING_PLAN.md](docs/PS4_PORTING_PLAN.md) for the actual porting milestones.
 

@@ -29,6 +29,9 @@ static char game_directory[4096];
 static bool core_ready;
 
 static const char *const data_directories[] = {
+    "/data/KillerRemakeP4/roms/kinst",
+    "/data/KillerRemakeP4/roms",
+    "/data/KillerRemakeP4",
     "/data/KillerPs4/roms/kinst",
     "/data/KillerPs4/kinst",
     "/data/KillerPs4",
@@ -199,10 +202,10 @@ bool ki1_core_init_from_directory(const char *directory,
     }
 
     // Save settings in the app's writable data area, not on the selected USB.
-    (void)mkdir("/data/KillerPs4", 0777);
-    const char *settings_path = "/data/KillerPs4/ki1.settings";
+    (void)mkdir("/data/KillerRemakeP4", 0777);
+    const char *settings_path = "/data/KillerRemakeP4/ki1.settings";
     struct stat settings_stat;
-    if (stat("/data/KillerPs4", &settings_stat) != 0 ||
+    if (stat("/data/KillerRemakeP4", &settings_stat) != 0 ||
         !S_ISDIR(settings_stat.st_mode)) {
         settings_path = NULL;
     }
