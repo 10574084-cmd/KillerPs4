@@ -256,6 +256,36 @@ void Scene2D::DrawRectangle(int x, int y, int w, int h, Color color)
 	}
 }
 
+void Scene2D::DrawRGBImage(int x, int y, int w, int h,
+                           const uint32_t *source, int sourceWidth, int sourceHeight)
+{
+    // This fast path is used for the emulator's 320x240 frame. It writes
+    // directly to the inactive 32-bit video buffer, avoiding per-pixel
+    // DrawPixel calls across the 1440x1080 presentation rectangle.
+    if (!source || w <= 0 || h <= 0 || sourceWidth <= 0 || sourceHeight <= 0)
+        return;
+    if (w > 1920 || x < 0 || y < 0 || x + w > this->width || y + h > this->height)
+        return;
+
+    static int xMap[1920];
+    for (int column = 0; column < w; ++column)
+        xMap[column] = (int)(((int64_t)column * sourceWidth) / w);
+
+    uint32_t *destination =
+        (uint32_t *)this->frameBuffers[this->activeFrameBufferIdx];
+
+    for (int row = 0; row < h; ++row) {
+        const int sourceY = (int)(((int64_t)row * sourceHeight) / h);
+        const uint32_t *sourceRow = source + sourceY * sourceWidth;
+        uint32_t *destinationRow = destination + (y + row) * this->width + x;
+
+        for (int column = 0; column < w; ++column) {
+            destinationRow[column] = 0x80000000u |
+                (sourceRow[xMap[column]] & 0x00ffffffu);
+        }
+    }
+}
+
 #ifdef GRAPHICS_USES_FONT
 void Scene2D::DrawText(char *txt, FT_Face face, int startX, int startY, Color bgColor, Color fgColor)
 {
