@@ -16,6 +16,24 @@ jobs:
       - name: Check out KillerPs4
         uses: actions/checkout@v4
 
+      - name: Check out the official create-fself source
+        uses: actions/checkout@v4
+        with:
+          repository: OpenOrbis/create-fself
+          ref: v1.3
+          path: deps/create-fself
+
+      - name: Set up Go for create-fself
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.17'
+
+      - name: Build create-fself for the Linux runner
+        working-directory: deps/create-fself/cmd/create-fself
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/tools/bin"
+          go build -o "$GITHUB_WORKSPACE/tools/bin/create-fself" -modfile=go-linux.mod
+
       - name: Build PS4 ELF and PKG with the official OpenOrbis container
         run: |
           docker run --rm --user root \
