@@ -16,7 +16,7 @@ TARGET_FLAGS := --target=x86_64-pc-freebsd12-elf -D_GNU_SOURCE -fPIC -funwind-ta
     -isysroot $(TOOLCHAIN) -isystem $(TOOLCHAIN)/include
 CXXFLAGS := $(TARGET_FLAGS) -isystem $(TOOLCHAIN)/include/c++/v1 \
     -I$(COMMONDIR) -Isrc -std=c++17 -O2 -Wall -Wextra
-LIBS := -lc -lkernel -lc++ -lSceVideoOut -lScePad -lSceUserService
+LIBS := -lc -lkernel -lc++ -lSceVideoOut -lScePad -lSceUserService -lm
 LDFLAGS := -m elf_x86_64 -pie --script $(TOOLCHAIN)/link.x --eh-frame-hdr \
     -L$(TOOLCHAIN)/lib $(LIBS) $(TOOLCHAIN)/lib/crt1.o
 
@@ -69,8 +69,8 @@ $(BUILD_DIR)/main.o: src/main.cpp $(COMMONDIR)/graphics.h | $(BUILD_DIR)
 $(BUILD_DIR)/graphics.o: $(COMMONDIR)/graphics.cpp $(COMMONDIR)/graphics.h $(COMMONDIR)/log.h | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -o $@ $<
 
-$(ELF): $(OBJS)
-	$(LD) $(OBJS) -o $@ $(LDFLAGS)
+$(ELF): $(OBJS) $(BUILD_DIR)/libki1core.a
+	$(LD) $(OBJS) $(BUILD_DIR)/libki1core.a -o $@ $(LDFLAGS)
 
 eboot.bin: $(ELF)
 	$(FSELF_TOOL) -in=$(ELF) -out=$(OELF) --eboot "eboot.bin" --paid 0x3100000000000001
