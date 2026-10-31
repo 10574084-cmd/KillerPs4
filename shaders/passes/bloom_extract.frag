@@ -11,7 +11,8 @@ vec3 srgb_to_linear(vec3 c)
 {
     vec3 low = c / 12.92;
     vec3 high = pow((c + 0.055) / 1.055, vec3(2.4));
-    return mix(high, low, lessThanEqual(c, vec3(0.04045)));
+    vec3 use_low = vec3(1.0) - step(vec3(0.04045), c);
+    return mix(high, low, use_low);
 }
 
 void main()
