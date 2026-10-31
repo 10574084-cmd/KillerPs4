@@ -44,7 +44,9 @@ The Lush Arcade preset uses a bright-pass extraction, two separable blur passes 
 
 **These shader files are not connected to a PS4 frame renderer yet.** The repository does not have the emulator video loop or an OpenGL context at this stage. GitHub Actions now validates the GLSL syntax and preset JSON, but that is not a PS4 runtime test.
 
-The intended presentation still preserves the original 4:3 playfield. A 16:9 display should add side areas instead of stretching the game image. Nearest-neighbour and bilinear scaling remain independent of the Lush Arcade / CRT presets. Filters must not change emulation timing.
+The intended presentation still preserves the original 4:3 playfield. The new `Wide Arcade 16:9` pass keeps the full game frame centered and fills the side areas with a darker, blurred crop of the current scene. At 1920×1080, gameplay remains 1440×1080 with 240-pixel side gutters. This is a presentation patch, not a true expanded camera/FOV hack: the arcade outputs a fixed 320×240 frame. See [WIDESCREEN.md](shaders/WIDESCREEN.md).
+
+Nearest-neighbour and bilinear scaling remain independent of the Lush Arcade / CRT presets. Filters must not change emulation timing.
 
 ## Build
 
