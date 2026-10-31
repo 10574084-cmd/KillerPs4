@@ -76,8 +76,7 @@ sce_module/libSceFios2.prx:
 	cp $(TOOLCHAIN)/bin/data/modules/libSceFios2.prx $@
 
 sce_sys/about/right.sprx:
-	mkdir -p sce_sys/about
-	cp $(TOOLCHAIN)/bin/data/modules/right.sprx $@
+	test -s $@
 
 licenses/OpenOrbis-GPL-3.0.txt: third_party/openorbis-sample-graphics/GPL-3.0.txt
 	mkdir -p licenses
