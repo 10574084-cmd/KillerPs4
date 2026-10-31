@@ -16,6 +16,13 @@ jobs:
       - name: Check out KillerPs4
         uses: actions/checkout@v4
 
+      - name: Check out pinned UltraCombo KI1 machine core
+        uses: actions/checkout@v4
+        with:
+          repository: thefixinhixon/UltraCombo
+          ref: b7ae26e7605efbe53cb60433ade26d5579900d8e
+          path: deps/UltraCombo
+
       - name: Check out the official create-fself source
         uses: actions/checkout@v4
         with:
@@ -59,4 +66,5 @@ jobs:
             eboot.bin
             build/ki1_widescreen_test.elf
             build/ki1_widescreen_test.oelf
+            build/libki1core.a
           if-no-files-found: error
