@@ -30,6 +30,9 @@ Do not commit generated C or native modules derived from the commercial game ROM
    - Wire the `Lush Arcade` passes: bright-pass extraction, half-resolution separable blur, final bloom/color-grade composite.
    - Wire the optional `Arcade CRT` pass as an alternative, not an extra mandatory layer.
    - Keep the game viewport 4:3 and add side areas for 16:9 displays.
+   - Integrate `shaders/passes/wide_preserve_4_3.frag` after the optional color-grade pass.
+   - Keep menus and OSD aligned to the centered 4:3 game viewport.
+   - Treat this as aspect-preserving presentation, not a claim of extra game-world visibility.
    - Convert the emulated audio stream to the PS4 output format without tying emulation speed to rendering.
 
 3. **KI1 emulator core**
