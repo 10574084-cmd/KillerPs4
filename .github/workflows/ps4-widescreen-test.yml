@@ -1,0 +1,34 @@
+name: KI1 Widescreen Test PKG
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-ps4:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Build PS4 ELF and PKG with OpenOrbis
+        uses: OpenOrbis/toolchain-action@main
+        with:
+          version: v0.5.4
+          command: make clean all
+
+      - name: Upload test package
+        uses: actions/upload-artifact@v4
+        with:
+          name: KI1-Widescreen-Test-PS4
+          path: |
+            *.pkg
+            eboot.bin
+            build/ki1_widescreen_test.elf
+            build/ki1_widescreen_test.oelf
+          if-no-files-found: error
