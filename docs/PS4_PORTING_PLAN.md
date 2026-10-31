@@ -25,8 +25,11 @@ Do not commit generated C or native modules derived from the commercial game ROM
 
 2. **Video, audio and input backend**
    - Establish a 320×240 frame upload path to the PS4 renderer.
-   - Add nearest and bilinear sampling.
-   - Add shader passes only after the basic frame path is stable.
+   - Decide and build the supported PS4 graphics backend (the committed shader assets target GLSL 3.30 Core; runtime availability still needs proof).
+   - Add nearest and bilinear sampling independently from shader presets.
+   - Wire the `Lush Arcade` passes: bright-pass extraction, half-resolution separable blur, final bloom/color-grade composite.
+   - Wire the optional `Arcade CRT` pass as an alternative, not an extra mandatory layer.
+   - Keep the game viewport 4:3 and add side areas for 16:9 displays.
    - Convert the emulated audio stream to the PS4 output format without tying emulation speed to rendering.
 
 3. **KI1 emulator core**
@@ -64,3 +67,11 @@ The normal KI1 set consists of:
 | Arcade hard disk | `kinst.chd` or `kinst.raw` |
 
 The game data is not supplied here. Users must provide files they are entitled to use.
+
+## Shader implementation notes
+
+The original shader sources and preset manifests live in `shaders/`. See [shaders/README.md](../shaders/README.md) for the design, pass order and limitations.
+
+The shader direction takes inspiration from the lighting/color goals of Minecraft's Newb Shader but is independently authored for a 2D arcade frame. There is no depth, normal or per-object material buffer in the 320×240 output, so the current effects are screen-space only. Proper cast shadows and reflections are not possible without additional game-specific scene data.
+
+The shader sources are validated on the host with `sh tools/test_shaders.sh`. That checks GLSL syntax and JSON manifests, not PS4 shader compilation or frame rendering. The renderer still needs to load the shader files, create its framebuffers, bind the uniform values from the preset and present the composited frame.
