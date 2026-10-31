@@ -30,8 +30,35 @@ endif
 
 OBJS := $(BUILD_DIR)/main.o $(BUILD_DIR)/graphics.o
 
-.PHONY: all clean
-all: $(PKG)
+# Pinned UltraCombo machine core. It is cross-compiled as a standalone archive
+# first; the known-good framebuffer test executable does not link it yet.
+ULTRACOMBO_DIR ?= deps/UltraCombo/src
+ULTRACOMBO_CHDR_INC := -I$(ULTRACOMBO_DIR)/third_party/libchdr/include \
+    -I$(ULTRACOMBO_DIR)/third_party/libchdr/deps/lzma-26.02/include \
+    -I$(ULTRACOMBO_DIR)/third_party/libchdr/deps/miniz-3.1.2 \
+    -I$(ULTRACOMBO_DIR)/third_party/libchdr/deps/zstd-1.5.7
+ULTRACOMBO_NAMES := cpu disasm mem ide dcs adsp adsprec rec rec_none game game_ki1 game_ki2 state
+ULTRACOMBO_OBJS := $(addprefix $(BUILD_DIR)/uc_,$(addsuffix .o,$(ULTRACOMBO_NAMES)))
+ULTRACOMBO_OBJS += $(BUILD_DIR)/uc_libchdr.o $(BUILD_DIR)/ki1_core_port.o
+ULTRACOMBO_CFLAGS := $(TARGET_FLAGS) -std=gnu11 -O2 -Wall -Wextra \
+    -I$(ULTRACOMBO_DIR) $(ULTRACOMBO_CHDR_INC)
+
+.PHONY: all clean core-check
+all: core-check $(PKG)
+
+core-check: $(BUILD_DIR)/libki1core.a
+
+$(BUILD_DIR)/uc_%.o: $(ULTRACOMBO_DIR)/%.c | $(BUILD_DIR)
+	clang $(ULTRACOMBO_CFLAGS) -o $@ $<
+
+$(BUILD_DIR)/uc_libchdr.o: $(ULTRACOMBO_DIR)/third_party/libchdr_all.c | $(BUILD_DIR)
+	clang $(ULTRACOMBO_CFLAGS) -w -o $@ $<
+
+$(BUILD_DIR)/ki1_core_port.o: src/ki1_core_port.c src/ki1_core_port.h | $(BUILD_DIR)
+	clang $(ULTRACOMBO_CFLAGS) -o $@ $<
+
+$(BUILD_DIR)/libki1core.a: $(ULTRACOMBO_OBJS)
+	ar rcs $@ $^
 
 $(BUILD_DIR):
 	mkdir -p $@
