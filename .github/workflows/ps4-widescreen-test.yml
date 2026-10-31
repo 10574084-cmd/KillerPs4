@@ -34,6 +34,14 @@ jobs:
           mkdir -p "$GITHUB_WORKSPACE/tools/bin"
           go build -o "$GITHUB_WORKSPACE/tools/bin/create-fself" -modfile=go-linux.mod
 
+      - name: Fetch the pinned OpenOrbis sample module
+        run: |
+          mkdir -p sce_sys/about
+          curl --fail --location --retry 3 \
+            "https://raw.githubusercontent.com/OpenOrbis/OpenOrbis-PS4-Toolchain/0a1aaf9dd4a92695538bdeb09fb056d06dd11725/samples/piglet/sce_sys/about/right.sprx" \
+            --output sce_sys/about/right.sprx
+          test -s sce_sys/about/right.sprx
+
       - name: Build PS4 ELF and PKG with the official OpenOrbis container
         run: |
           docker run --rm --user root \
