@@ -24,12 +24,18 @@ done <<EOF
 $(find "$ROOT/shaders" -type f \( -name '*.vert' -o -name '*.frag' \) | sort)
 EOF
 
-python3 -m json.tool "$ROOT/shaders/presets/ki1_newb_style.json" >/dev/null
-python3 -m json.tool "$ROOT/shaders/presets/ki1_crt.json" >/dev/null
+preset_count=0
+while IFS= read -r preset; do
+    echo "Checking $preset"
+    python3 -m json.tool "$preset" >/dev/null
+    preset_count=$((preset_count + 1))
+done <<EOF
+$(find "$ROOT/shaders/presets" -type f -name '*.json' | sort)
+EOF
 
-if [ "$count" -lt 1 ]; then
+if [ "$count" -lt 1 ] || [ "$preset_count" -lt 1 ]; then
     echo "No GLSL shader files were found." >&2
     exit 1
 fi
 
-echo "Validated $count GLSL shader files and 2 preset manifests."
+echo "Validated $count GLSL shader files and $preset_count preset manifests."
