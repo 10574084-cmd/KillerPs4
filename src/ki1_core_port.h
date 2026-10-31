@@ -14,6 +14,7 @@ extern "C" {
  * Game data is supplied by the user and is never bundled in the PKG.
  */
 bool ki1_core_init(char *error, size_t error_capacity);
+bool ki1_core_init_from_directory(const char *directory, char *error, size_t error_capacity);
 void ki1_core_run_frame(uint16_t player1_buttons, uint16_t player2_buttons);
 void ki1_core_copy_rgb(uint32_t *destination_320x240);
 int ki1_core_fetch_audio(int16_t *samples, int max_samples);
