@@ -217,9 +217,9 @@ bool ensureDirectory(const std::string &path)
 
 void bootLog(FILE *logFile, const char *stage)
 {
-    printf("[BOOT] %s\\n", stage);
+    printf("[BOOT] %s\n", stage);
     if (logFile) {
-        fprintf(logFile, "%s\\n", stage);
+        fprintf(logFile, "%s\n", stage);
         fflush(logFile);
     }
 }
@@ -355,7 +355,7 @@ bool initController(int &handle)
 int main()
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
-    printf("Killer Instinct PS4 - select game folder.\\n");
+    printf("Killer Instinct PS4 - select game folder.\n");
 
     // Create the writable data folder first, then record each boot milestone.
     const bool dataRootReady = ensureDirectory("/data/KillerRemakeP4");
@@ -375,7 +375,7 @@ int main()
     Scene2D *scene = new Scene2D(kWidth, kHeight, 4);
     if (!scene->Init(0x0C000000, 2)) {
         bootLog(bootLogFile, "VIDEO INITIALIZATION FAILED");
-        printf("Video output initialization failed.\\n");
+        printf("Video output initialization failed.\n");
         for (;;) sceKernelUsleep(250000);
     }
     bootLog(bootLogFile, "VIDEO INITIALIZATION OK");
