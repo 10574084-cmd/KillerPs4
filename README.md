@@ -12,7 +12,7 @@ Native PlayStation 4 homebrew port project for **Killer Instinct (arcade, 1994)*
 
 **Early porting stage — not playable yet.**
 
-A portable KI1 data-manifest scanner and host tests are now present in `src/ki1_data.c`. The emulator core and PS4 frontend have not yet been integrated. The scanner is not connected to a PS4 menu yet. A successful host test or future package build will not prove that the game runs; actual emulation must also be tested on hardware.
+A portable KI1 data-manifest scanner and host tests are present in `src/ki1_data.c`. The emulator core and PS4 game frontend have not yet been integrated. There is now a separate OpenOrbis 16:9 display-test app in `src/main.cpp`, with a PKG build workflow. That test app draws a synthetic 320×240 pattern; it is not Killer Instinct gameplay. See [WIDESCREEN_TEST_BUILD.md](docs/WIDESCREEN_TEST_BUILD.md).
 
 ## Emulation approach
 
@@ -48,9 +48,13 @@ The intended presentation still preserves the original 4:3 playfield. The new `W
 
 Nearest-neighbour and bilinear scaling remain independent of the Lush Arcade / CRT presets. Filters must not change emulation timing.
 
-## Build
+## Build and test package
 
-The PS4 build scripts and package workflow are not in place yet. Host-only manifest tests can be run with `sh tools/test_ki1_data.sh`; GitHub Actions runs the same test on pushes and pull requests. These tests do not build a PS4 ELF or PKG. See [docs/PS4_PORTING_PLAN.md](docs/PS4_PORTING_PLAN.md) for the current implementation sequence and compatibility notes.
+The host-only manifest tests can be run with `sh tools/test_ki1_data.sh`. Shader syntax and preset JSON are checked with `sh tools/test_shaders.sh`.
+
+The workflow `.github/workflows/ps4-widescreen-test.yml` builds a separate PS4 **widescreen test PKG** using OpenOrbis and uploads the `KI1-Widescreen-Test-PS4` artifact. It is a synthetic display test, not a game build. Only install it after its Actions run finishes successfully. See [docs/WIDESCREEN_TEST_BUILD.md](docs/WIDESCREEN_TEST_BUILD.md).
+
+The real KI1 ELF/PKG is not ready: the emulator core and shader renderer are not yet connected. See [docs/PS4_PORTING_PLAN.md](docs/PS4_PORTING_PLAN.md) for the actual porting milestones.
 
 ## Credits and licensing
 
