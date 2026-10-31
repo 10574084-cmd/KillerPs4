@@ -38,7 +38,7 @@ $(BUILD_DIR):
 $(BUILD_DIR)/main.o: src/main.cpp $(COMMONDIR)/graphics.h | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -o $@ $<
 
-$(BUILD_DIR)/graphics.o: $(COMMONDIR)/graphics.cpp $(COMMONDIR)/graphics.h | $(BUILD_DIR)
+$(BUILD_DIR)/graphics.o: $(COMMONDIR)/graphics.cpp $(COMMONDIR)/graphics.h $(COMMONDIR)/log.h | $(BUILD_DIR)
 	$(CXX) $(CXXFLAGS) -o $@ $<
 
 $(ELF): $(OBJS)
