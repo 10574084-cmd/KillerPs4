@@ -1,0 +1,27 @@
+# Personal arcade game data — never commit these files
+/roms/
+/run/
+/game-data/
+*.chd
+*.raw
+*.u98
+u10-l1
+u11-l1
+u12-l1
+u13-l1
+u33-l1
+u34-l1
+u35-l1
+u36-l1
+
+# Build output and generated game code
+/build/
+/dist/
+/cache/
+/saves/
+/states/
+/*.pkg
+/*.elf
+/*.oelf
+/eboot.bin
+/pkg.gp4
