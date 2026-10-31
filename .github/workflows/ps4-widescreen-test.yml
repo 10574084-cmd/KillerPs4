@@ -1,4 +1,4 @@
-name: KI1 Widescreen Test PKG
+name: Killer Instinct PS4 PKG
 
 on:
   push:
@@ -60,11 +60,11 @@ jobs:
       - name: Upload test package
         uses: actions/upload-artifact@v4
         with:
-          name: KI1-Widescreen-Test-PS4
+          name: Killer-Instinct-PS4
           path: |
             *.pkg
             eboot.bin
-            build/ki1_widescreen_test.elf
-            build/ki1_widescreen_test.oelf
+            build/killer_instinct_ps4.elf
+            build/killer_instinct_ps4.oelf
             build/libki1core.a
           if-no-files-found: error
