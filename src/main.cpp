@@ -213,37 +213,39 @@ void drawGameTestPattern(Scene2D *s, bool grid, bool safeFrame)
     }
 }
 
-void renderBothBuffers(Scene2D *s, bool backdrop, bool grid,
-                       bool safeFrame, int glow, int activeBuffer)
+void drawTestScene(Scene2D *s, bool backdrop, bool grid,
+                   bool safeFrame, int glow)
 {
-    for (int buffer = 0; buffer < 2; ++buffer) {
-        s->SetActiveFrameBuffer(buffer);
-        drawBackdrop(s, backdrop, glow);
-        drawGameTestPattern(s, grid, safeFrame);
+    drawBackdrop(s, backdrop, glow);
+    drawGameTestPattern(s, grid, safeFrame);
 
-        // Keep all test labels inside the 240-pixel side gutters so the
-        // central 4:3 content area remains completely unobstructed.
-        panel(s, 16, 24, 208, 104, rgb(8, 12, 25), rgb(65, 172, 213));
-        text(s, "KI1 16:9", 28, 42, 3, rgb(240, 247, 255));
-        text(s, "TEST", 28, 76, 3, rgb(240, 247, 255));
+    // Keep all test labels inside the 240-pixel side gutters so the
+    // central 4:3 content area remains completely unobstructed.
+    panel(s, 16, 24, 208, 104, rgb(8, 12, 25), rgb(65, 172, 213));
+    text(s, "KI1 16:9", 28, 42, 3, rgb(240, 247, 255));
+    text(s, "TEST", 28, 76, 3, rgb(240, 247, 255));
 
-        panel(s, 16, 176, 208, 392, rgb(8, 12, 25), rgb(65, 172, 213));
-        text(s, "CROSS", 28, 197, 3, rgb(232, 237, 248));
-        text(s, "SIDES", 28, 228, 3, rgb(167, 194, 226));
-        text(s, "TRIANGLE", 28, 285, 2, rgb(232, 237, 248));
-        text(s, "GRID", 28, 316, 3, rgb(167, 194, 226));
-        text(s, "SQUARE", 28, 373, 3, rgb(232, 237, 248));
-        text(s, "SAFE", 28, 404, 3, rgb(167, 194, 226));
-        text(s, "LEFT RIGHT", 28, 461, 2, rgb(232, 237, 248));
-        text(s, "LIGHT", 28, 492, 3, rgb(167, 194, 226));
-        text(s, "CIRCLE", 28, 525, 3, rgb(232, 237, 248));
+    panel(s, 16, 176, 208, 392, rgb(8, 12, 25), rgb(65, 172, 213));
+    text(s, "CROSS", 28, 197, 3, rgb(232, 237, 248));
+    text(s, "SIDES", 28, 228, 3, rgb(167, 194, 226));
+    text(s, "TRIANGLE", 28, 285, 2, rgb(232, 237, 248));
+    text(s, "GRID", 28, 316, 3, rgb(167, 194, 226));
+    text(s, "SQUARE", 28, 373, 3, rgb(232, 237, 248));
+    text(s, "SAFE", 28, 404, 3, rgb(167, 194, 226));
+    text(s, "LEFT RIGHT", 28, 461, 2, rgb(232, 237, 248));
+    text(s, "LIGHT", 28, 492, 3, rgb(167, 194, 226));
+    text(s, "CIRCLE", 28, 525, 3, rgb(232, 237, 248));
 
-        panel(s, 1696, 24, 208, 104, rgb(8, 12, 25), rgb(65, 172, 213));
-        text(s, "4:3 AREA", 1708, 42, 3, rgb(240, 247, 255));
-        text(s, "1440X1080", 1708, 78, 2, rgb(167, 194, 226));
-    }
+    panel(s, 1696, 24, 208, 104, rgb(8, 12, 25), rgb(65, 172, 213));
+    text(s, "4:3 AREA", 1708, 42, 3, rgb(240, 247, 255));
+    text(s, "1440X1080", 1708, 78, 2, rgb(167, 194, 226));
+}
 
-    s->SetActiveFrameBuffer(activeBuffer);
+void renderBuffer(Scene2D *s, int buffer, bool backdrop, bool grid,
+                  bool safeFrame, int glow)
+{
+    s->SetActiveFrameBuffer(buffer);
+    drawTestScene(s, backdrop, grid, safeFrame, glow);
 }
 
 bool initController(int &handle)
@@ -286,7 +288,13 @@ int main()
     int frameId = 0;
     int activeBuffer = 0;
 
-    renderBothBuffers(&scene, backdrop, grid, safeFrame, glow, activeBuffer);
+    // Draw the first buffer, present it, then prepare the second buffer.
+    renderBuffer(&scene, activeBuffer, backdrop, grid, safeFrame, glow);
+    scene.SubmitFlip(frameId);
+    scene.FrameWait(frameId);
+    ++frameId;
+    activeBuffer = 1;
+    renderBuffer(&scene, activeBuffer, backdrop, grid, safeFrame, glow);
 
     for (;;) {
         uint32_t pressed = 0;
@@ -322,16 +330,21 @@ int main()
             changed = true;
         }
 
-        // Both framebuffers are redrawn only after an input change. The
-        // static test screen then flips without repainting every pixel.
+        // Paint only the buffer that is not currently being scanned out.
         if (changed) {
-            renderBothBuffers(&scene, backdrop, grid, safeFrame, glow, activeBuffer);
+            renderBuffer(&scene, activeBuffer, backdrop, grid, safeFrame, glow);
         }
 
         scene.SetActiveFrameBuffer(activeBuffer);
         scene.SubmitFlip(frameId);
         scene.FrameWait(frameId);
         activeBuffer = 1 - activeBuffer;
+
+        // After the flip, the old front buffer is now safe to prepare for
+        // the next frame. This keeps both buffers visually in sync.
+        if (changed) {
+            renderBuffer(&scene, activeBuffer, backdrop, grid, safeFrame, glow);
+        }
         ++frameId;
     }
 
