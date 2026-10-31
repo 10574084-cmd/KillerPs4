@@ -12,7 +12,7 @@ Native PlayStation 4 homebrew port project for **Killer Instinct (arcade, 1994)*
 
 **Early porting stage — not playable yet.**
 
-This repository currently contains the project definition and porting notes. The emulator core has not yet been integrated or validated on PS4. A successful package build in the future will only prove that the PS4 executable was built; actual emulation must also be tested on hardware.
+A portable KI1 data-manifest scanner and host tests are now present in `src/ki1_data.c`. The emulator core and PS4 frontend have not yet been integrated. The scanner is not connected to a PS4 menu yet. A successful host test or future package build will not prove that the game runs; actual emulation must also be tested on hardware.
 
 ## Emulation approach
 
@@ -31,7 +31,7 @@ The KI1 set normally needs:
 - Eight sound ROMs: `u10-l1`, `u11-l1`, `u12-l1`, `u13-l1`, `u33-l1`, `u34-l1`, `u35-l1`, `u36-l1`.
 - Hard-disk image: `kinst.chd` (or a raw `kinst.raw` image).
 
-The PS4 loader will validate required files and report missing or mismatched files instead of silently booting an incomplete set. Exact storage path and transfer workflow will be finalized with the first loader build.
+The first manifest module selects a valid L1.5D or L1.4 boot ROM, checks the eight sound ROM sizes and CRC32 values, and checks the raw disk size or the CHD file signature. Full CHD integrity verification and wiring the report into a PS4 loader are still pending. Exact storage path and transfer workflow will be finalized with the first loader build.
 
 ## Video and controls target
 
@@ -45,7 +45,7 @@ Filters and screen layout must not change the emulated game's timing.
 
 ## Build
 
-The PS4 build scripts and package workflow are not in place yet. See [docs/PS4_PORTING_PLAN.md](docs/PS4_PORTING_PLAN.md) for the current implementation sequence and compatibility notes.
+The PS4 build scripts and package workflow are not in place yet. Host-only manifest tests can be run with `sh tools/test_ki1_data.sh`; GitHub Actions runs the same test on pushes and pull requests. These tests do not build a PS4 ELF or PKG. See [docs/PS4_PORTING_PLAN.md](docs/PS4_PORTING_PLAN.md) for the current implementation sequence and compatibility notes.
 
 ## Credits and licensing
 
