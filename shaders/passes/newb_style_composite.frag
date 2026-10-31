@@ -19,7 +19,8 @@ vec3 srgb_to_linear(vec3 c)
 {
     vec3 low = c / 12.92;
     vec3 high = pow((c + 0.055) / 1.055, vec3(2.4));
-    return mix(high, low, lessThanEqual(c, vec3(0.04045)));
+    vec3 use_low = vec3(1.0) - step(vec3(0.04045), c);
+    return mix(high, low, use_low);
 }
 
 vec3 linear_to_srgb(vec3 c)
@@ -27,7 +28,8 @@ vec3 linear_to_srgb(vec3 c)
     c = max(c, vec3(0.0));
     vec3 low = c * 12.92;
     vec3 high = 1.055 * pow(c, vec3(1.0 / 2.4)) - 0.055;
-    return mix(high, low, lessThanEqual(c, vec3(0.0031308)));
+    vec3 use_low = vec3(1.0) - step(vec3(0.0031308), c);
+    return mix(high, low, use_low);
 }
 
 vec3 aces_tonemap(vec3 x)
@@ -65,7 +67,7 @@ void main()
     float min_channel = min(saturated.r, min(saturated.g, saturated.b));
     float chroma = max_channel - min_channel;
     float vibrance_gain = 1.0 + (1.0 - clamp(chroma, 0.0, 1.0)) * u_vibrance;
-    saturated = mix(graded, saturated, vibrance_gain);
+    saturated = graded + (saturated - graded) * vibrance_gain;
 
     saturated = (saturated - 0.18) * u_contrast + 0.18;
     vec3 mapped = aces_tonemap(max(saturated, vec3(0.0)));
