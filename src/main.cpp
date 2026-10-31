@@ -268,8 +268,10 @@ int main()
     setvbuf(stdout, nullptr, _IONBF, 0);
     printf("KI1 Widescreen Test - aspect-preserving 16:9 preview.\n");
 
-    Scene2D scene(kWidth, kHeight, 4);
-    if (!scene.Init(0x02000000, 2)) {
+    // Keep the graphics context alive for the complete application lifetime.
+    // The upstream sample declares a destructor but does not define one.
+    Scene2D *scene = new Scene2D(kWidth, kHeight, 4);
+    if (!scene->Init(0x02000000, 2)) {
         printf("Video output initialization failed.\n");
         for (;;) sceKernelUsleep(250000);
     }
@@ -288,12 +290,12 @@ int main()
     int activeBuffer = 0;
 
     // Draw the first buffer, present it, then prepare the second buffer.
-    renderBuffer(&scene, activeBuffer, backdrop, grid, safeFrame, glow);
-    scene.SubmitFlip(frameId);
-    scene.FrameWait(frameId);
+    renderBuffer(scene, activeBuffer, backdrop, grid, safeFrame, glow);
+    scene->SubmitFlip(frameId);
+    scene->FrameWait(frameId);
     ++frameId;
     activeBuffer = 1;
-    renderBuffer(&scene, activeBuffer, backdrop, grid, safeFrame, glow);
+    renderBuffer(scene, activeBuffer, backdrop, grid, safeFrame, glow);
 
     for (;;) {
         uint32_t pressed = 0;
@@ -331,18 +333,18 @@ int main()
 
         // Paint only the buffer that is not currently being scanned out.
         if (changed) {
-            renderBuffer(&scene, activeBuffer, backdrop, grid, safeFrame, glow);
+            renderBuffer(scene, activeBuffer, backdrop, grid, safeFrame, glow);
         }
 
         scene.SetActiveFrameBuffer(activeBuffer);
-        scene.SubmitFlip(frameId);
-        scene.FrameWait(frameId);
+        scene->SubmitFlip(frameId);
+        scene->FrameWait(frameId);
         activeBuffer = 1 - activeBuffer;
 
         // After the flip, the old front buffer is now safe to prepare for
         // the next frame. This keeps both buffers visually in sync.
         if (changed) {
-            renderBuffer(&scene, activeBuffer, backdrop, grid, safeFrame, glow);
+            renderBuffer(scene, activeBuffer, backdrop, grid, safeFrame, glow);
         }
         ++frameId;
     }
