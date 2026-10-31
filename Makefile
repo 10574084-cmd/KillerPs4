@@ -5,7 +5,7 @@ CONTENT_ID := IV0000-KIPT00001_00-KI1WIDETEST000001
 
 TOOLCHAIN := $(OO_PS4_TOOLCHAIN)
 PKGTOOLS := $(TOOLCHAIN)/bin/linux
-COMMONDIR := $(TOOLCHAIN)/samples/_common
+COMMONDIR ?= third_party/openorbis-sample-graphics
 BUILD_DIR := build
 ELF := $(BUILD_DIR)/ki1_widescreen_test.elf
 OELF := $(BUILD_DIR)/ki1_widescreen_test.oelf
@@ -74,7 +74,15 @@ sce_module/libSceFios2.prx:
 	mkdir -p sce_module
 	cp $(TOOLCHAIN)/bin/data/modules/libSceFios2.prx $@
 
-pkg.gp4: eboot.bin sce_sys/param.sfo sce_sys/icon0.png sce_module/libc.prx sce_module/libSceFios2.prx
+sce_sys/about/right.sprx:
+	mkdir -p sce_sys/about
+	cp $(TOOLCHAIN)/bin/data/modules/right.sprx $@
+
+licenses/OpenOrbis-GPL-3.0.txt: third_party/openorbis-sample-graphics/GPL-3.0.txt
+	mkdir -p licenses
+	cp $< $@
+
+pkg.gp4: eboot.bin sce_sys/param.sfo sce_sys/icon0.png sce_module/libc.prx sce_module/libSceFios2.prx sce_sys/about/right.sprx licenses/OpenOrbis-GPL-3.0.txt
 	python3 tools/make_gp4.py --out $@ --content-id $(CONTENT_ID) $^
 
 $(PKG): pkg.gp4
