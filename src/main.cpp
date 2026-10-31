@@ -4,6 +4,10 @@
 #include <cstdio>
 #include <cstring>
 #include <sstream>
+#include <string>
+#include <vector>
+#include <dirent.h>
+#include <sys/stat.h>
 
 #include <orbis/Pad.h>
 #include <orbis/UserService.h>
@@ -100,15 +104,6 @@ void panel(Scene2D *s, int x, int y, int w, int h, Color fill, Color edge)
     rect(s, x + w - 3, y, 3, h, edge);
 }
 
-int gx(int sourceX) { return kGameX + (sourceX * 9) / 2; }
-int gy(int sourceY) { return (sourceY * 9) / 2; }
-void gameRect(Scene2D *s, int x, int y, int w, int h, Color c)
-{
-    const int x0 = gx(x), y0 = gy(y);
-    const int x1 = gx(x + w), y1 = gy(y + h);
-    rect(s, x0, y0, x1 - x0, y1 - y0, c);
-}
-
 void drawBackdrop(Scene2D *s, bool enabled, int glow)
 {
     rect(s, 0, 0, kWidth, kHeight, rgb(5, 7, 17));
@@ -145,107 +140,6 @@ void drawBackdrop(Scene2D *s, bool enabled, int glow)
 
     rect(s, kGameX - 5, 0, 5, kHeight, rgb(27, 34, 61));
     rect(s, kGameX + kGameWidth, 0, 5, kHeight, rgb(27, 34, 61));
-}
-
-void drawFighter(Scene2D *s, int x, int y, Color mainColor, Color highlight)
-{
-    gameRect(s, x + 5, y, 12, 13, highlight);       // head
-    gameRect(s, x + 2, y + 14, 18, 28, mainColor); // torso
-    gameRect(s, x - 4, y + 18, 7, 24, highlight);  // left arm
-    gameRect(s, x + 19, y + 18, 7, 24, highlight);// right arm
-    gameRect(s, x + 4, y + 42, 6, 27, mainColor); // leg
-    gameRect(s, x + 13, y + 42, 6, 27, mainColor);
-    gameRect(s, x - 1, y + 67, 12, 5, highlight);
-    gameRect(s, x + 11, y + 67, 12, 5, highlight);
-}
-
-void drawGameTestPattern(Scene2D *s, bool grid, bool safeFrame)
-{
-    gameRect(s, 0, 0, 320, 240, rgb(8, 11, 27));
-
-    // A stylized, original test scene: no commercial game artwork is bundled.
-    for (int i = 0; i < 12; ++i) {
-        const float t = i / 11.0f;
-        const Color c = blend(rgb(16, 28, 59), rgb(83, 27, 85), t);
-        gameRect(s, 0, i * 13, 320, 14, c);
-    }
-
-    gameRect(s, 0, 134, 320, 106, rgb(12, 15, 28));
-    gameRect(s, 0, 142, 320, 3, rgb(58, 43, 86));
-
-    for (int i = 0; i < 9; ++i) {
-        const int y = 151 + i * i * 1;
-        gameRect(s, 0, y, 320, 1, rgb(30 + i * 2, 39 + i * 2, 67 + i * 3));
-    }
-    for (int i = -6; i <= 6; ++i)
-        gameRect(s, 158 + i * 16, 145, 1, 95, rgb(30, 39, 64));
-
-    // Bright central focus and symmetry markers help reveal distortion.
-    gameRect(s, 152, 66, 16, 72, rgb(20, 26, 44));
-    gameRect(s, 155, 73, 10, 58, rgb(45, 77, 111));
-    gameRect(s, 126, 116, 68, 3, rgb(242, 183, 87));
-    gameRect(s, 158, 105, 4, 24, rgb(255, 224, 145));
-
-    drawFighter(s, 62, 60, rgb(25, 129, 190), rgb(105, 215, 241));
-    drawFighter(s, 226, 60, rgb(178, 59, 111), rgb(255, 165, 179));
-
-    gameRect(s, 16, 16, 288, 3, rgb(241, 191, 94));
-    gameRect(s, 16, 20, 288, 1, rgb(94, 151, 190));
-    gameRect(s, 16, 222, 288, 2, rgb(241, 191, 94));
-
-    text(s, "KI1 WIDE TEST", gx(20), gy(29), 5, rgb(255, 239, 196));
-    text(s, "320 X 240", gx(20), gy(205), 3, rgb(173, 197, 226));
-
-    if (grid) {
-        for (int x = 40; x < 320; x += 40)
-            gameRect(s, x, 0, 1, 240, rgb(45, 75, 105));
-        for (int y = 40; y < 240; y += 40)
-            gameRect(s, 0, y, 320, 1, rgb(45, 75, 105));
-        gameRect(s, 159, 0, 2, 240, rgb(245, 220, 150));
-        gameRect(s, 0, 119, 320, 2, rgb(245, 220, 150));
-    }
-
-    if (safeFrame) {
-        gameRect(s, 8, 8, 304, 1, rgb(255, 255, 255));
-        gameRect(s, 8, 231, 304, 1, rgb(255, 255, 255));
-        gameRect(s, 8, 8, 1, 224, rgb(255, 255, 255));
-        gameRect(s, 311, 8, 1, 224, rgb(255, 255, 255));
-    }
-}
-
-void drawTestScene(Scene2D *s, bool backdrop, bool grid,
-                   bool safeFrame, int glow)
-{
-    drawBackdrop(s, backdrop, glow);
-    drawGameTestPattern(s, grid, safeFrame);
-
-    // Keep all test labels inside the 240-pixel side gutters so the
-    // central 4:3 content area remains completely unobstructed.
-    panel(s, 16, 24, 208, 104, rgb(8, 12, 25), rgb(65, 172, 213));
-    text(s, "KI1 16:9", 28, 42, 3, rgb(240, 247, 255));
-    text(s, "TEST", 28, 76, 3, rgb(240, 247, 255));
-
-    panel(s, 16, 176, 208, 392, rgb(8, 12, 25), rgb(65, 172, 213));
-    text(s, "CROSS", 28, 197, 3, rgb(232, 237, 248));
-    text(s, "SIDES", 28, 228, 3, rgb(167, 194, 226));
-    text(s, "TRIANGLE", 28, 285, 2, rgb(232, 237, 248));
-    text(s, "GRID", 28, 316, 3, rgb(167, 194, 226));
-    text(s, "SQUARE", 28, 373, 3, rgb(232, 237, 248));
-    text(s, "SAFE", 28, 404, 3, rgb(167, 194, 226));
-    text(s, "LEFT RIGHT", 28, 461, 2, rgb(232, 237, 248));
-    text(s, "LIGHT", 28, 492, 3, rgb(167, 194, 226));
-    text(s, "CIRCLE", 28, 525, 3, rgb(232, 237, 248));
-
-    panel(s, 1696, 24, 208, 104, rgb(8, 12, 25), rgb(65, 172, 213));
-    text(s, "4:3 AREA", 1708, 42, 3, rgb(240, 247, 255));
-    text(s, "1440X1080", 1708, 78, 2, rgb(167, 194, 226));
-}
-
-void renderBuffer(Scene2D *s, int buffer, bool backdrop, bool grid,
-                  bool safeFrame, int glow)
-{
-    s->SetActiveFrameBuffer(buffer);
-    drawTestScene(s, backdrop, grid, safeFrame, glow);
 }
 
 uint16_t mapArcadeButtons(uint32_t buttons)
@@ -294,9 +188,112 @@ void drawArcadeScene(Scene2D *s, const uint32_t *frame, int glow)
     panel(s, 1696, 176, 208, 392, rgb(8, 12, 25), rgb(65, 172, 213));
     text(s, "CORE", 1708, 197, 3, rgb(232, 237, 248));
     text(s, "INTERPRETER", 1708, 228, 2, rgb(167, 194, 226));
-    text(s, "SILENT TEST", 1708, 285, 2, rgb(240, 190, 120));
-    text(s, "AUDIO NOT", 1708, 342, 2, rgb(167, 194, 226));
-    text(s, "CONNECTED", 1708, 373, 2, rgb(167, 194, 226));
+    text(s, "ARCADE CORE", 1708, 285, 2, rgb(240, 190, 120));
+    text(s, "AUDIO OUTPUT", 1708, 342, 2, rgb(167, 194, 226));
+    text(s, "PENDING", 1708, 373, 2, rgb(167, 194, 226));
+}
+
+
+struct FolderPicker {
+    std::string path = "/mnt";
+    std::vector<std::string> folders;
+    size_t selected = 0;
+    std::string message = "OPEN YOUR USB, THEN THE FOLDER WITH KI1 FILES";
+};
+
+bool isDirectory(const std::string &path)
+{
+    struct stat st = {};
+    return stat(path.c_str(), &st) == 0 && S_ISDIR(st.st_mode);
+}
+
+std::string joinPath(const std::string &base, const std::string &name)
+{
+    if (base == "/") return base + name;
+    return base + "/" + name;
+}
+
+void refreshFolders(FolderPicker &picker)
+{
+    picker.folders.clear();
+    DIR *dir = opendir(picker.path.c_str());
+    if (!dir) {
+        picker.message = "CANNOT OPEN THIS LOCATION";
+        picker.selected = 0;
+        return;
+    }
+
+    struct dirent *entry = nullptr;
+    while ((entry = readdir(dir)) != nullptr) {
+        const std::string name(entry->d_name);
+        if (name == "." || name == "..") continue;
+        if (isDirectory(joinPath(picker.path, name)))
+            picker.folders.push_back(name);
+    }
+    closedir(dir);
+
+    std::sort(picker.folders.begin(), picker.folders.end());
+    picker.selected = 0;
+    picker.message = picker.folders.empty()
+        ? "NO SUBFOLDERS - TRIANGLE SELECTS THIS FOLDER"
+        : "X OPEN FOLDER - TRIANGLE USE THIS FOLDER";
+}
+
+void pickerEnter(FolderPicker &picker)
+{
+    if (picker.selected >= picker.folders.size()) return;
+    const std::string next = joinPath(picker.path, picker.folders[picker.selected]);
+    if (next.size() >= 1000 || !isDirectory(next)) {
+        picker.message = "CANNOT OPEN SELECTED FOLDER";
+        return;
+    }
+    picker.path = next;
+    refreshFolders(picker);
+}
+
+void pickerUp(FolderPicker &picker)
+{
+    if (picker.path == "/" || picker.path.empty()) return;
+    const size_t slash = picker.path.find_last_of('/');
+    if (slash == 0) picker.path = "/";
+    else if (slash != std::string::npos) picker.path.resize(slash);
+    refreshFolders(picker);
+}
+
+void drawFolderPicker(Scene2D *s, const FolderPicker &picker)
+{
+    drawBackdrop(s, true, 5);
+    panel(s, 150, 70, 1620, 930, rgb(7, 11, 24), rgb(65, 172, 213));
+    text(s, "KILLER INSTINCT", 205, 115, 7, rgb(244, 247, 255));
+    text(s, "SELECT THE FOLDER WITH YOUR ARCADE FILES", 205, 205, 3, rgb(174, 201, 231));
+
+    std::string shownPath = picker.path;
+    if (shownPath.size() > 86)
+        shownPath = "..." + shownPath.substr(shownPath.size() - 83);
+    text(s, shownPath.c_str(), 205, 265, 3, rgb(255, 210, 125));
+
+    const size_t visibleRows = 10;
+    const size_t first = picker.selected >= visibleRows
+        ? picker.selected - visibleRows + 1 : 0;
+
+    if (picker.folders.empty()) {
+        text(s, "NO SUBFOLDERS FOUND", 245, 375, 4, rgb(225, 230, 240));
+    } else {
+        for (size_t row = 0; row < visibleRows && first + row < picker.folders.size(); ++row) {
+            const size_t index = first + row;
+            const int y = 340 + static_cast<int>(row) * 55;
+            const bool active = index == picker.selected;
+            if (active)
+                panel(s, 190, y - 8, 1540, 45, rgb(30, 44, 71), rgb(255, 194, 91));
+            const std::string name = picker.folders[index].substr(0, 76);
+            text(s, name.c_str(), 255, y, 3,
+                 active ? rgb(255, 245, 220) : rgb(190, 207, 229));
+        }
+    }
+
+    text(s, picker.message.c_str(), 205, 905, 2, rgb(255, 201, 117));
+    text(s, "UP DOWN MOVE   X OPEN   CIRCLE UP   TRIANGLE SELECT", 205, 955, 2,
+         rgb(185, 204, 231));
 }
 
 bool initController(int &handle)
@@ -318,51 +315,42 @@ bool initController(int &handle)
 int main()
 {
     setvbuf(stdout, nullptr, _IONBF, 0);
-    printf("KI1 Widescreen Test - framebuffer and controller test.\\n");
+    printf("Killer Instinct PS4 - select game folder.\n");
 
     Scene2D *scene = new Scene2D(kWidth, kHeight, 4);
     if (!scene->Init(0x0C000000, 2)) {
-        printf("Video output initialization failed.\\n");
+        printf("Video output initialization failed.\n");
         for (;;) sceKernelUsleep(250000);
     }
 
-    bool backdrop = true;
-    bool grid = false;
-    bool safeFrame = false;
-    int glow = 5;
-    static uint32_t gameFrame[320 * 240];
+    FolderPicker picker;
+    refreshFolders(picker);
 
-    // Prepare and present a known-good frame before loading game files.
-    renderBuffer(scene, 0, backdrop, grid, safeFrame, glow);
-    renderBuffer(scene, 1, backdrop, grid, safeFrame, glow);
-
+    int activeBuffer = 0;
     int frameId = 0;
-    scene->SetActiveFrameBuffer(0);
+    for (int buffer = 0; buffer < 2; ++buffer) {
+        scene->SetActiveFrameBuffer(buffer);
+        drawFolderPicker(scene, picker);
+    }
+    scene->SetActiveFrameBuffer(activeBuffer);
     scene->SubmitFlip(frameId);
     scene->FrameWait(frameId);
     scene->FrameBufferSwap();
+    activeBuffer = 1;
     ++frameId;
 
-    // The user supplies their own KI1 files under /data/KillerPs4 or a
-    // supported USB folder. The display test remains available without them.
-    char coreError[512] = {};
-    const bool gameReady = ki1_core_init(coreError, sizeof(coreError));
-    if (gameReady) {
-        printf("KI1 interpreter core initialized.\\n");
-        ki1_core_run_frame(0, 0);
-        ki1_core_copy_rgb(gameFrame);
-    } else {
-        printf("KI1 core not started: %s\\n", coreError);
-    }
-
-    // Bring up controller services only after the first frame is on screen.
     int padHandle = -1;
     const bool controllerReady = initController(padHandle);
-    if (controllerReady) printf("DualShock controller ready.\\n");
-    else printf("Controller unavailable; display remains active.\\n");
+    if (controllerReady) printf("DualShock controller ready.\n");
+    else printf("Controller initialization failed.\n");
 
     uint32_t previousButtons = 0;
+    bool gameReady = false;
+    int glow = 5;
+    static uint32_t gameFrame[320 * 240];
     double frameAccumulator = 0.0;
+    char coreError[512] = {};
+
     for (;;) {
         uint32_t pressed = 0;
         uint32_t currentButtons = 0;
@@ -377,42 +365,45 @@ int main()
             }
         }
 
-        bool changed = false;
+        bool pickerChanged = false;
         if (!gameReady) {
+            if (pressed & ORBIS_PAD_BUTTON_UP) {
+                if (picker.selected > 0) --picker.selected;
+                pickerChanged = true;
+            }
+            if (pressed & ORBIS_PAD_BUTTON_DOWN) {
+                if (picker.selected + 1 < picker.folders.size()) ++picker.selected;
+                pickerChanged = true;
+            }
             if (pressed & ORBIS_PAD_BUTTON_CROSS) {
-                backdrop = !backdrop;
-                changed = true;
-            }
-            if (pressed & ORBIS_PAD_BUTTON_TRIANGLE) {
-                grid = !grid;
-                changed = true;
-            }
-            if (pressed & ORBIS_PAD_BUTTON_SQUARE) {
-                safeFrame = !safeFrame;
-                changed = true;
-            }
-            if (pressed & ORBIS_PAD_BUTTON_LEFT) {
-                const int next = std::max(0, glow - 1);
-                changed = changed || next != glow;
-                glow = next;
-            }
-            if (pressed & ORBIS_PAD_BUTTON_RIGHT) {
-                const int next = std::min(10, glow + 1);
-                changed = changed || next != glow;
-                glow = next;
+                pickerEnter(picker);
+                pickerChanged = true;
             }
             if (pressed & ORBIS_PAD_BUTTON_CIRCLE) {
-                backdrop = true;
-                grid = false;
-                safeFrame = false;
-                glow = 5;
-                changed = true;
+                pickerUp(picker);
+                pickerChanged = true;
             }
-            if (changed)
-                drawTestScene(scene, backdrop, grid, safeFrame, glow);
-        } else {
-            // A 60 Hz display presents the arcade's ~58.96 Hz image. The
-            // accumulator holds a frame occasionally instead of speeding up.
+            if (pressed & ORBIS_PAD_BUTTON_OPTIONS) {
+                refreshFolders(picker);
+                pickerChanged = true;
+            }
+            if (pressed & ORBIS_PAD_BUTTON_TRIANGLE) {
+                coreError[0] = '\0';
+                if (ki1_core_init_from_directory(picker.path.c_str(),
+                                                 coreError, sizeof(coreError))) {
+                    gameReady = true;
+                    ki1_core_run_frame(0, 0);
+                    ki1_core_copy_rgb(gameFrame);
+                    printf("Killer Instinct core initialized from %s\n", picker.path.c_str());
+                } else {
+                    picker.message = coreError[0] ? coreError : "GAME FILES NOT FOUND";
+                    pickerChanged = true;
+                    printf("Folder rejected: %s\n", picker.message.c_str());
+                }
+            }
+        }
+
+        if (gameReady) {
             frameAccumulator += 58.9634 / 60.0;
             if (frameAccumulator >= 1.0) {
                 frameAccumulator -= 1.0;
@@ -421,20 +412,23 @@ int main()
             }
             drawArcadeScene(scene, gameFrame, glow);
 
-            // Keep the DCS queue bounded. PS4 audio output is the next step.
+            // The core generates samples, but PS4 audio output is not wired yet.
             int16_t discardedAudio[2048];
             while (ki1_core_fetch_audio(discardedAudio, 2048) > 0) {}
+        } else if (pickerChanged) {
+            // Keep both registered framebuffers in sync while the picker is idle.
+            for (int buffer = 0; buffer < 2; ++buffer) {
+                scene->SetActiveFrameBuffer(buffer);
+                drawFolderPicker(scene, picker);
+            }
         }
 
+        scene->SetActiveFrameBuffer(activeBuffer);
         scene->SubmitFlip(frameId);
         scene->FrameWait(frameId);
         scene->FrameBufferSwap();
+        activeBuffer = 1 - activeBuffer;
         ++frameId;
-
-        // In test mode both registered buffers must show the same settings.
-        // Game mode redraws the next back buffer on the next loop iteration.
-        if (!gameReady && changed)
-            drawTestScene(scene, backdrop, grid, safeFrame, glow);
     }
 
     return 0;
