@@ -1,0 +1,37 @@
+{
+  "name": "Lush Arcade",
+  "description": "Original Newb-style color and lighting treatment adapted for a 2D arcade frame.",
+  "pipeline": [
+    "passes/bloom_extract.frag",
+    "passes/gaussian_blur.frag",
+    "passes/gaussian_blur.frag",
+    "passes/newb_style_composite.frag"
+  ],
+  "bloom_target_scale": 0.5,
+  "blur_directions": [[1.0, 0.0], [0.0, 1.0]],
+  "uniforms": {
+    "u_threshold": 0.78,
+    "u_soft_knee": 0.24,
+    "u_exposure": 1.06,
+    "u_bloom_strength": 0.22,
+    "u_saturation": 1.13,
+    "u_vibrance": 0.18,
+    "u_contrast": 1.04,
+    "u_warm_highlights": 0.72,
+    "u_cool_shadows": 0.42,
+    "u_vignette": 0.10,
+    "u_effect_strength": 0.92
+  },
+  "source": {
+    "width": 320,
+    "height": 240,
+    "aspect_ratio": "4:3"
+  },
+  "notes": [
+    "The scene input is sampled as sRGB and converted to linear light before bloom and grading.",
+    "Bloom buffers store linear RGB.",
+    "Use linear filtering for the scene upscale when smooth scaling is selected.",
+    "Keep the original 4:3 game viewport; any 16:9 layout must add side areas rather than stretch the game image.",
+    "This is a post-process preset. It does not create geometry-based shadows, reflections, moving foliage, clouds or water."
+  ]
+}
