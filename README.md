@@ -12,13 +12,13 @@ Native PlayStation 4 homebrew port project for **Killer Instinct (arcade, 1994)*
 
 **Early porting stage — not playable yet.**
 
-A portable KI1 data-manifest scanner and host tests are present in `src/ki1_data.c`. The working PS4 application is still a separate OpenOrbis 16:9 display test in `src/main.cpp`; it draws a synthetic 320×240 pattern, not Killer Instinct gameplay. A PS4-facing machine adapter and pinned UltraCombo source-build check have now been added; see [ULTRACOMBO_CORE.md](docs/ULTRACOMBO_CORE.md). The core archive is not yet linked into the running application.
+A portable KI1 data-manifest scanner and host tests are present in `src/ki1_data.c`. The PS4 application now opens an in-app folder browser. Use the controller to navigate USB storage and select the folder containing the extracted `kinst` files. The app checks the boot ROM, all eight sound ROMs, and the CHD/raw disk before starting the emulator core. The port remains experimental and has not yet been validated as playable on a console.
 
 ## Emulation approach
 
 The first implementation candidate is the MIT-licensed [UltraCombo](https://github.com/thefixinhixon/UltraCombo) KI1 emulator core. It already models the Killer Instinct board components needed by this game, including the MIPS CPU, DCS audio and IDE hard disk. It is a native Windows/Linux program today, so its frontend and platform dependencies still need a PS4 adaptation.
 
-The intended PS4 build will not require the MAME application to be installed or launched. It will, however, accept the arcade ROM and hard-disk data in the established `kinst` set format.
+The intended PS4 build will not require the MAME application to be installed or launched. It accepts the arcade ROM and hard-disk data in the established `kinst` set format. Use the on-screen folder browser to choose the directory; all required files must be extracted into that same directory.
 
 The interpreter path is the initial PS4 target. UltraCombo's optional runtime recompilation invokes external compiler tools, which is not a suitable assumption for a console build. Interpreter performance has to be measured before calling the port playable.
 
@@ -31,7 +31,7 @@ The KI1 set normally needs:
 - Eight sound ROMs: `u10-l1`, `u11-l1`, `u12-l1`, `u13-l1`, `u33-l1`, `u34-l1`, `u35-l1`, `u36-l1`.
 - Hard-disk image: `kinst.chd` (or a raw `kinst.raw` image).
 
-The first manifest module selects a valid L1.5D or L1.4 boot ROM, checks the eight sound ROM sizes and CRC32 values, and checks the raw disk size or the CHD file signature. Full CHD integrity verification and wiring the report into a PS4 loader are still pending. Exact storage path and transfer workflow will be finalized with the first loader build.
+The first manifest module selects a valid L1.5D or L1.4 boot ROM, checks the eight sound ROM sizes and CRC32 values, and checks the raw disk size or the CHD file signature. Full CHD integrity verification and wiring the report into a PS4 loader are still pending. The folder browser starts at `/mnt`. Cross opens a folder, Circle goes up one level, Triangle selects the current folder, and Options refreshes the listing.
 
 ## Video and shader target
 
@@ -52,7 +52,7 @@ Nearest-neighbour and bilinear scaling remain independent of the Lush Arcade / C
 
 The host-only manifest tests can be run with `sh tools/test_ki1_data.sh`. Shader syntax and preset JSON are checked with `sh tools/test_shaders.sh`.
 
-The workflow `.github/workflows/ps4-widescreen-test.yml` builds a separate PS4 **widescreen test PKG** using OpenOrbis and uploads the `KI1-Widescreen-Test-PS4` artifact. It is a synthetic display test, not a game build. Only install it after its Actions run finishes successfully. See [docs/WIDESCREEN_TEST_BUILD.md](docs/WIDESCREEN_TEST_BUILD.md).
+The workflow `.github/workflows/ps4-widescreen-test.yml` builds an experimental Killer Instinct PS4 PKG using OpenOrbis and uploads the `Killer-Instinct-PS4` artifact. A successful Actions run confirms compilation and packaging only; it does not prove the emulator boots or runs at full speed on hardware.
 
 The real KI1 ELF/PKG is not ready: the machine core has an initial PS4 adapter and a separate cross-compile target, but is not yet linked to the running app or connected to the renderer/audio output. See [docs/PS4_PORTING_PLAN.md](docs/PS4_PORTING_PLAN.md) for the actual porting milestones.
 
