@@ -1,0 +1,35 @@
+#!/usr/bin/env sh
+set -eu
+
+ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+VALIDATOR="${GLSLANG_VALIDATOR:-glslangValidator}"
+
+if ! command -v "$VALIDATOR" >/dev/null 2>&1; then
+    echo "glslangValidator is required. Install glslang-tools." >&2
+    exit 2
+fi
+
+count=0
+while IFS= read -r file; do
+    case "$file" in
+        *.vert) stage=vert ;;
+        *.frag) stage=frag ;;
+        *) continue ;;
+    esac
+
+    echo "Checking $file"
+    "$VALIDATOR" -S "$stage" "$file"
+    count=$((count + 1))
+done <<EOF
+$(find "$ROOT/shaders" -type f \( -name '*.vert' -o -name '*.frag' \) | sort)
+EOF
+
+python3 -m json.tool "$ROOT/shaders/presets/ki1_newb_style.json" >/dev/null
+python3 -m json.tool "$ROOT/shaders/presets/ki1_crt.json" >/dev/null
+
+if [ "$count" -lt 1 ]; then
+    echo "No GLSL shader files were found." >&2
+    exit 1
+fi
+
+echo "Validated $count GLSL shader files and 2 preset manifests."
